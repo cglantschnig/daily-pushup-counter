@@ -1,5 +1,6 @@
 {
   "name": "daily-pushup-counter",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,6 +23,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "easy-speech": "^2.4.0",
     "lucide-react": "^0.577.0",
     "nitro": "latest",
     "radix-ui": "^1.4.3",
