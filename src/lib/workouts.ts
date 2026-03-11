@@ -2,6 +2,8 @@ export const WORKOUT_OPTIONS = [
   {
     id: "pushup",
     label: "Pushups",
+    instructions:
+      "Keep your body in a straight line, lower your chest until your elbows reach about 90 degrees, and press back up with control.",
   },
 ] as const
 

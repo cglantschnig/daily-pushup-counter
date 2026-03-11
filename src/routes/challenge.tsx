@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, CircleHelp } from "lucide-react"
 import { useEffect, useEffectEvent, useRef, useState } from "react"
 import { AppScreen } from "@/components/app-screen"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,7 @@ function ChallengeScreen() {
   const [target] = useState(() => getRandomTarget())
   const [workout] = useState(() => getRandomWorkout())
   const [hasStarted, setHasStarted] = useState(false)
+  const [isWorkoutTipOpen, setIsWorkoutTipOpen] = useState(false)
   const [currentStep, setCurrentStep] =
     useState<(typeof COUNTDOWN_STEPS)[number]["label"]>("3")
   const timeoutIdsRef = useRef<Array<number>>([])
@@ -98,9 +99,37 @@ function ChallengeScreen() {
           <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">
             Workout
           </p>
-          <p className="mt-3 text-4xl leading-none font-semibold tracking-[-0.06em] text-foreground sm:text-5xl">
-            {workout.label}
-          </p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <p className="text-4xl leading-none font-semibold tracking-[-0.06em] text-foreground sm:text-5xl">
+              {workout.label}
+            </p>
+            <div
+              className="relative flex items-center"
+              onMouseEnter={() => setIsWorkoutTipOpen(true)}
+              onMouseLeave={() => setIsWorkoutTipOpen(false)}
+            >
+              <button
+                type="button"
+                aria-label={`How to do ${workout.label} properly`}
+                aria-describedby="workout-tip"
+                aria-expanded={isWorkoutTipOpen}
+                onClick={() => setIsWorkoutTipOpen((current) => !current)}
+                onBlur={() => setIsWorkoutTipOpen(false)}
+                className="inline-flex size-8 items-center justify-center rounded-full border border-border/80 bg-background/80 text-muted-foreground transition-colors hover:text-primary focus-visible:text-primary"
+              >
+                <CircleHelp className="size-4" />
+              </button>
+              {isWorkoutTipOpen ? (
+                <div
+                  id="workout-tip"
+                  role="tooltip"
+                  className="absolute top-full left-1/2 z-10 mt-3 w-64 -translate-x-1/2 rounded-2xl border border-border/70 bg-popover px-4 py-3 text-left text-sm leading-6 text-popover-foreground shadow-lg shadow-primary/10"
+                >
+                  {workout.instructions}
+                </div>
+              ) : null}
+            </div>
+          </div>
         </section>
 
         <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 text-center shadow-sm shadow-primary/5 dark:shadow-black/20">
