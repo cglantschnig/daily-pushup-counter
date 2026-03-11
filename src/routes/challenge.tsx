@@ -1,17 +1,19 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { ChevronLeft } from "lucide-react"
-import { useEffect, useEffectEvent, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AppScreen } from "@/components/app-screen"
 import { Button } from "@/components/ui/button"
 import { cancelSpeech, initializeSpeech, speakText } from "@/lib/speech"
 import { getRandomTarget, getRandomWorkout } from "@/lib/workouts"
 
 const COUNTDOWN_STEPS = [
-  { label: "3", speech: "3", delay: 0 },
-  { label: "2", speech: "2", delay: 1000 },
-  { label: "1", speech: "1", delay: 2000 },
-  { label: "START", speech: "Start", delay: 3000 },
+  { label: "3", speech: "Three" },
+  { label: "2", speech: "Two" },
+  { label: "1", speech: "One" },
+  { label: "GO", speech: "Go" },
 ] as const
+
+const COUNTDOWN_STEP_DELAY_MS = 1000
 
 export const Route = createFileRoute("/challenge")({
   component: ChallengeScreen,
@@ -23,44 +25,59 @@ function ChallengeScreen() {
   const [hasStarted, setHasStarted] = useState(false)
   const [currentStep, setCurrentStep] =
     useState<(typeof COUNTDOWN_STEPS)[number]["label"]>("3")
-  const timeoutIdsRef = useRef<Array<number>>([])
-
-  const clearSequence = useEffectEvent(() => {
-    timeoutIdsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
-    timeoutIdsRef.current = []
-
-    void cancelSpeech()
-  })
-
-  const announceStep = useEffectEvent((step: (typeof COUNTDOWN_STEPS)[number]) => {
-    setCurrentStep(step.label)
-    void speakText(step.speech)
-  })
+  const countdownTimeoutRef = useRef<number | null>(null)
+  const countdownSessionRef = useRef(0)
 
   useEffect(() => {
-    if (!hasStarted) {
-      return
-    }
-
     void initializeSpeech()
-    announceStep(COUNTDOWN_STEPS[0])
-
-    COUNTDOWN_STEPS.slice(1).forEach((step) => {
-      const timeoutId = window.setTimeout(() => {
-        announceStep(step)
-      }, step.delay)
-
-      timeoutIdsRef.current.push(timeoutId)
-    })
 
     return () => {
       clearSequence()
     }
-  }, [announceStep, clearSequence, hasStarted])
+  }, [])
+
+  function clearSequence() {
+    countdownSessionRef.current += 1
+
+    if (countdownTimeoutRef.current !== null) {
+      window.clearTimeout(countdownTimeoutRef.current)
+      countdownTimeoutRef.current = null
+    }
+
+    void cancelSpeech()
+  }
+
+  function announceStep(stepIndex: number, sessionId: number) {
+    if (countdownSessionRef.current !== sessionId) {
+      return
+    }
+
+    const step = COUNTDOWN_STEPS[stepIndex]
+    setCurrentStep(step.label)
+    void speakText(step.speech)
+
+    if (stepIndex === COUNTDOWN_STEPS.length - 1) {
+      countdownTimeoutRef.current = null
+      return
+    }
+
+    countdownTimeoutRef.current = window.setTimeout(() => {
+      announceStep(stepIndex + 1, sessionId)
+    }, COUNTDOWN_STEP_DELAY_MS)
+  }
 
   function handleStart() {
-    setCurrentStep(COUNTDOWN_STEPS[0].label)
+    const sessionId = countdownSessionRef.current + 1
+    countdownSessionRef.current = sessionId
+
+    if (countdownTimeoutRef.current !== null) {
+      window.clearTimeout(countdownTimeoutRef.current)
+      countdownTimeoutRef.current = null
+    }
+
+    void cancelSpeech()
     setHasStarted(true)
+    announceStep(0, sessionId)
   }
 
   function handleReset() {
@@ -118,7 +135,7 @@ function ChallengeScreen() {
               <p
                 aria-live="assertive"
                 className={
-                  currentStep === "START"
+                  currentStep === "GO"
                     ? "text-5xl font-semibold tracking-[0.24em] text-primary uppercase sm:text-6xl"
                     : "text-8xl leading-none font-semibold tracking-[-0.08em] text-foreground sm:text-[8rem]"
                 }
@@ -131,7 +148,7 @@ function ChallengeScreen() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-1 flex-col justify-center space-y-4 pt-2 text-center">
+          <div className="flex flex-1 flex-col justify-center space-y-4 pt-10 text-center sm:pt-14">
             <Button
               type="button"
               size="lg"
