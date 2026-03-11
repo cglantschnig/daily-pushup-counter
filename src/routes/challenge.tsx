@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { ChevronLeft, CircleHelp } from "lucide-react"
-import { useEffect, useEffectEvent, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AppScreen } from "@/components/app-screen"
 import { Button } from "@/components/ui/button"
 import { cancelSpeech, initializeSpeech, speakText } from "@/lib/speech"
@@ -81,25 +81,14 @@ function ChallengeScreen() {
     announceStep(0, sessionId)
   }
 
-  function handleReset() {
+  function handleExit() {
     clearSequence()
-    setCurrentStep(COUNTDOWN_STEPS[0].label)
-    setHasStarted(false)
   }
 
   return (
     <AppScreen
       headerStart={
-        hasStarted ? (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-opacity hover:opacity-75"
-          >
-            <ChevronLeft className="size-4" />
-            <span>Challenge</span>
-          </button>
-        ) : (
+        hasStarted ? null : (
           <Link
             to="/"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-opacity hover:opacity-75"
@@ -108,6 +97,17 @@ function ChallengeScreen() {
             <span>Home</span>
           </Link>
         )
+      }
+      headerEnd={
+        hasStarted ? (
+          <Link
+            to="/"
+            onClick={handleExit}
+            className="text-sm font-medium text-primary transition-opacity hover:opacity-75"
+          >
+            Exit
+          </Link>
+        ) : null
       }
       showBranding={false}
     >

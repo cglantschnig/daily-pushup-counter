@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 
 type AppScreenProps = {
   headerStart?: ReactNode
+  headerEnd?: ReactNode
   showBranding?: boolean
   showVersion?: boolean
   title?: string
@@ -11,6 +12,7 @@ type AppScreenProps = {
 
 export function AppScreen({
   headerStart,
+  headerEnd,
   showBranding = true,
   showVersion = false,
   title,
@@ -27,7 +29,12 @@ export function AppScreen({
       <div className="relative mx-auto flex min-h-[calc(100svh-2.5rem)] max-w-md flex-col">
         <section className="flex h-full flex-1 flex-col rounded-[2rem] border border-border/70 bg-card/78 p-6 shadow-[0_28px_80px_rgba(17,72,137,0.2)] backdrop-blur-xl dark:shadow-[0_28px_80px_rgba(3,8,20,0.48)] sm:p-7">
           <header className="mb-6 space-y-5">
-            {headerStart ? <div>{headerStart}</div> : null}
+            {headerStart || headerEnd ? (
+              <div className="flex min-h-6 items-start justify-between gap-3">
+                <div>{headerStart}</div>
+                <div>{headerEnd}</div>
+              </div>
+            ) : null}
             {showBranding ? (
               <div className="flex items-center gap-3">
                 <div className="flex size-14 items-center justify-center rounded-[1.35rem] border border-primary/12 bg-linear-to-br from-white to-primary/12 shadow-[0_18px_40px_rgba(17,87,166,0.14)] dark:from-white/10 dark:to-primary/20 dark:shadow-[0_18px_40px_rgba(3,8,20,0.4)]">
