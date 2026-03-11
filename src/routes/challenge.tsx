@@ -26,7 +26,7 @@ function ChallengeScreen() {
       }
       showBranding={false}
     >
-      <div className="flex h-full flex-col justify-center gap-5 py-6">
+      <div className="flex h-full flex-col gap-5 py-6">
         <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 text-center shadow-sm shadow-primary/5 dark:shadow-black/20">
           <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">
             Workout
@@ -45,7 +45,7 @@ function ChallengeScreen() {
           </p>
         </section>
 
-        <div className="space-y-4 pt-2 text-center">
+        <div className="flex flex-1 flex-col justify-center space-y-4 pt-2 text-center">
           <Button
             asChild
             size="lg"

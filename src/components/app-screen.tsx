@@ -25,7 +25,7 @@ export function AppScreen({
       </div>
 
       <div className="relative mx-auto flex min-h-[calc(100svh-2.5rem)] max-w-md flex-col">
-        <section className="flex-1 rounded-[2rem] border border-border/70 bg-card/78 p-6 shadow-[0_28px_80px_rgba(17,72,137,0.2)] backdrop-blur-xl dark:shadow-[0_28px_80px_rgba(3,8,20,0.48)] sm:p-7">
+        <section className="flex h-full flex-1 flex-col rounded-[2rem] border border-border/70 bg-card/78 p-6 shadow-[0_28px_80px_rgba(17,72,137,0.2)] backdrop-blur-xl dark:shadow-[0_28px_80px_rgba(3,8,20,0.48)] sm:p-7">
           <header className="mb-6 space-y-5">
             {headerStart ? <div>{headerStart}</div> : null}
             {showBranding ? (
@@ -61,7 +61,7 @@ export function AppScreen({
             ) : null}
           </header>
 
-          {children}
+          <div className="flex flex-1 flex-col">{children}</div>
         </section>
 
         {showVersion ? (
