@@ -1,12 +1,18 @@
 import type { ReactNode } from "react"
 
 type AppScreenProps = {
+  headerStart?: ReactNode
   title?: string
   subtitle?: string
   children: ReactNode
 }
 
-export function AppScreen({ title, subtitle, children }: AppScreenProps) {
+export function AppScreen({
+  headerStart,
+  title,
+  subtitle,
+  children,
+}: AppScreenProps) {
   return (
     <main className="relative min-h-svh overflow-hidden px-4 py-5 sm:px-6 sm:py-6">
       <div className="pointer-events-none absolute inset-0">
@@ -17,6 +23,7 @@ export function AppScreen({ title, subtitle, children }: AppScreenProps) {
       <div className="relative mx-auto flex min-h-[calc(100svh-2.5rem)] max-w-md flex-col">
         <section className="flex-1 rounded-[2rem] border border-white/70 bg-white/72 p-6 shadow-[0_28px_80px_rgba(17,72,137,0.2)] backdrop-blur-xl sm:p-7">
           <header className="mb-6 space-y-5">
+            {headerStart ? <div>{headerStart}</div> : null}
             <div className="flex items-center gap-3">
               <div className="flex size-14 items-center justify-center rounded-[1.35rem] border border-primary/12 bg-linear-to-br from-white to-primary/12 shadow-[0_18px_40px_rgba(17,87,166,0.14)]">
                 <img

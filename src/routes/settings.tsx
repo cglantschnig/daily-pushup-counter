@@ -1,10 +1,10 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { Bell, BellOff } from "lucide-react"
+import { Bell, BellOff, ChevronLeft } from "lucide-react"
 import { useEffect, useEffectEvent, useState } from "react"
 import { AppScreen } from "@/components/app-screen"
-import { Button } from "@/components/ui/button"
 import {
   REMINDER_SETTINGS_EVENT,
+  getNextReminderAt,
   getReminderStatus,
   isReminderStorageKey,
   requestReminderPermission,
@@ -18,63 +18,73 @@ export const Route = createFileRoute("/settings")({
   component: SettingsScreen,
 })
 
-function getStatusLabel(reminderStatus: ReminderStatus) {
-  if (!reminderStatus.supported) {
-    return "Unsupported on this device"
+function formatNextReminder(timestamp: number) {
+  const nextReminder = new Date(timestamp)
+  const now = new Date()
+  const timeLabel = new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(nextReminder)
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  )
+  const startOfReminderDay = new Date(
+    nextReminder.getFullYear(),
+    nextReminder.getMonth(),
+    nextReminder.getDate()
+  )
+  const daysUntilReminder = Math.round(
+    (startOfReminderDay.getTime() - startOfToday.getTime()) /
+      (24 * 60 * 60 * 1000)
+  )
+
+  if (daysUntilReminder === 0) {
+    return `Next push notification today at ${timeLabel}.`
   }
 
-  if (reminderStatus.enabled && reminderStatus.permission === "granted") {
-    return "Enabled"
+  if (daysUntilReminder === 1) {
+    return `Next push notification tomorrow at ${timeLabel}.`
   }
 
-  if (reminderStatus.enabled && reminderStatus.permission === "denied") {
-    return "Blocked by browser permission"
-  }
+  const dayLabel = new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }).format(nextReminder)
 
-  if (reminderStatus.permission === "granted") {
-    return "Allowed, but turned off"
-  }
-
-  if (reminderStatus.permission === "denied") {
-    return "Permission denied"
-  }
-
-  return "Turn on to request permission"
+  return `Next push notification on ${dayLabel} at ${timeLabel}.`
 }
 
-function getStatusDescription(reminderStatus: ReminderStatus) {
+function getReminderSummary(
+  reminderStatus: ReminderStatus,
+  nextReminderAt: number | null
+) {
   if (!reminderStatus.supported) {
-    return "This browser does not support push notifications."
+    return "Push notifications are not available on this device."
   }
 
-  if (reminderStatus.enabled && reminderStatus.permission === "granted") {
-    return "You will receive a reminder roughly every 30 minutes."
+  if (nextReminderAt !== null) {
+    return formatNextReminder(nextReminderAt)
   }
 
-  if (reminderStatus.enabled && reminderStatus.permission === "denied") {
-    return "Notifications are enabled in the app, but your browser is currently blocking them."
-  }
-
-  if (reminderStatus.permission === "granted") {
-    return "Notifications are allowed by the browser and ready to be turned on."
-  }
-
-  if (reminderStatus.permission === "denied") {
-    return "Allow notifications again in your browser site settings before turning this back on."
-  }
-
-  return "Turning this on will ask the browser for notification permission."
+  return "Turn notifications on to schedule the next push reminder."
 }
 
 function SettingsScreen() {
   const [reminderStatus, setReminderStatus] = useState<ReminderStatus>(() =>
     getReminderStatus()
   )
+  const [nextReminderAt, setNextReminderAt] = useState<number | null>(() =>
+    getNextReminderAt()
+  )
   const [isSaving, setIsSaving] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
 
   const refreshReminderStatus = useEffectEvent(() => {
     setReminderStatus(getReminderStatus())
+    setNextReminderAt(getNextReminderAt())
   })
 
   useEffect(() => {
@@ -102,11 +112,13 @@ function SettingsScreen() {
     window.addEventListener(REMINDER_SETTINGS_EVENT, handleReminderChange)
     window.addEventListener("storage", handleStorage)
     document.addEventListener("visibilitychange", handleVisibilityChange)
+    const intervalId = window.setInterval(refreshReminderStatus, 30_000)
 
     return () => {
       window.removeEventListener(REMINDER_SETTINGS_EVENT, handleReminderChange)
       window.removeEventListener("storage", handleStorage)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.clearInterval(intervalId)
     }
   }, [refreshReminderStatus])
 
@@ -119,7 +131,6 @@ function SettingsScreen() {
         setReminderEnabled(false)
         await syncPeriodicReminderRegistration()
         refreshReminderStatus()
-        setFeedback("Push notifications are turned off.")
         return
       }
 
@@ -130,9 +141,7 @@ function SettingsScreen() {
         await syncPeriodicReminderRegistration()
         refreshReminderStatus()
 
-        if (permission === "denied") {
-          setFeedback("Browser permission is blocked. Update site settings to enable notifications.")
-        } else if (permission === "unsupported") {
+        if (permission === "unsupported") {
           setFeedback("This device does not support push notifications.")
         } else {
           setFeedback("Notification permission was not granted.")
@@ -144,7 +153,6 @@ function SettingsScreen() {
       setReminderEnabled(true)
       await syncPeriodicReminderRegistration()
       refreshReminderStatus()
-      setFeedback("Push notifications are turned on.")
     } finally {
       setIsSaving(false)
     }
@@ -152,6 +160,15 @@ function SettingsScreen() {
 
   return (
     <AppScreen
+      headerStart={
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-opacity hover:opacity-75"
+        >
+          <ChevronLeft className="size-4" />
+          <span>Home</span>
+        </Link>
+      }
       title="Settings"
       subtitle="Manage reminder notifications for quick pushup check-ins."
     >
@@ -196,17 +213,9 @@ function SettingsScreen() {
                 </button>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-primary/10 bg-background/65 px-4 py-3">
-                <p className="text-xs font-medium tracking-[0.25em] text-primary uppercase">
-                  Status
-                </p>
-                <p className="mt-2 text-sm font-medium text-foreground">
-                  {getStatusLabel(reminderStatus)}
-                </p>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  {getStatusDescription(reminderStatus)}
-                </p>
-              </div>
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                {getReminderSummary(reminderStatus, nextReminderAt)}
+              </p>
 
               {feedback ? (
                 <p className="mt-4 text-sm leading-6 text-muted-foreground">
@@ -216,29 +225,6 @@ function SettingsScreen() {
             </div>
           </div>
         </section>
-
-        <div className="rounded-[1.75rem] border border-dashed border-primary/20 bg-white/52 px-5 py-5 text-sm leading-6 text-muted-foreground">
-          If notifications were blocked earlier, re-enable them in your browser's
-          site settings and then turn this switch back on.
-        </div>
-
-        <div className="mt-auto grid gap-3">
-          <Button
-            asChild
-            size="lg"
-            className="h-14 rounded-2xl text-sm font-semibold tracking-[0.2em] uppercase"
-          >
-            <Link to="/challenge">Start Challenge</Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="h-14 rounded-2xl text-sm font-semibold tracking-[0.2em] uppercase"
-          >
-            <Link to="/">Back Home</Link>
-          </Button>
-        </div>
       </div>
     </AppScreen>
   )

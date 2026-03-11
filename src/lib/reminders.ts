@@ -137,6 +137,18 @@ export function setReminderEnabled(enabled: boolean) {
   dispatchReminderSettingsEvent()
 }
 
+export function getNextReminderAt() {
+  const reminderStatus = getReminderStatus()
+
+  if (!reminderStatus.enabled || reminderStatus.permission !== "granted") {
+    return null
+  }
+
+  const now = Date.now()
+
+  return now + getReminderDelay(now)
+}
+
 export async function requestReminderPermission(): Promise<ReminderPermission> {
   if (!canUseBrowserApis() || !("Notification" in window)) {
     return "unsupported"
@@ -206,6 +218,7 @@ export async function maybeSendReminder() {
   }
 
   setLastReminderSentAt(now)
+  dispatchReminderSettingsEvent()
   await showReminderNotification()
   return true
 }
