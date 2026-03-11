@@ -141,6 +141,34 @@
 }
 
 @layer components {
+  .go-button-pulse {
+    animation: go-button-breathe 1.8s ease-in-out infinite;
+    position: relative;
+    isolation: isolate;
+  }
+
+  .go-button-pulse::after {
+    content: "";
+    position: absolute;
+    inset: -0.75rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklab, var(--color-primary) 36%, transparent);
+    animation: go-button-ring 1.8s ease-out infinite;
+    z-index: -1;
+  }
+
+  .countdown-stage {
+    background-image:
+      radial-gradient(circle at top, rgb(255 255 255 / 0.72), transparent 56%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.38) 0%, rgb(255 255 255 / 0.08) 100%);
+  }
+
+  .dark .countdown-stage {
+    background-image:
+      radial-gradient(circle at top, rgb(125 211 252 / 0.08), transparent 52%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.06) 0%, rgb(255 255 255 / 0.02) 100%);
+  }
+
   .theme-options-content {
     container-type: inline-size;
   }
@@ -149,5 +177,31 @@
     .theme-options-grid {
       grid-template-columns: minmax(0, 1fr);
     }
+  }
+}
+
+@keyframes go-button-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 26px 70px rgb(17 87 166 / 0.35);
+  }
+
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 34px 82px rgb(17 87 166 / 0.44);
+  }
+}
+
+@keyframes go-button-ring {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.96);
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
   }
 }
