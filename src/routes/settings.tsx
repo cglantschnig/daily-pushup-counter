@@ -169,6 +169,7 @@ function SettingsScreen() {
           <span>Home</span>
         </Link>
       }
+      showBranding={false}
       title="Settings"
       subtitle="Manage reminder notifications for quick pushup check-ins."
     >

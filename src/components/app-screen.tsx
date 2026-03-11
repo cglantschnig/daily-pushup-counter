@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 
 type AppScreenProps = {
   headerStart?: ReactNode
+  showBranding?: boolean
   title?: string
   subtitle?: string
   children: ReactNode
@@ -9,6 +10,7 @@ type AppScreenProps = {
 
 export function AppScreen({
   headerStart,
+  showBranding = true,
   title,
   subtitle,
   children,
@@ -24,23 +26,25 @@ export function AppScreen({
         <section className="flex-1 rounded-[2rem] border border-white/70 bg-white/72 p-6 shadow-[0_28px_80px_rgba(17,72,137,0.2)] backdrop-blur-xl sm:p-7">
           <header className="mb-6 space-y-5">
             {headerStart ? <div>{headerStart}</div> : null}
-            <div className="flex items-center gap-3">
-              <div className="flex size-14 items-center justify-center rounded-[1.35rem] border border-primary/12 bg-linear-to-br from-white to-primary/12 shadow-[0_18px_40px_rgba(17,87,166,0.14)]">
-                <img
-                  src="/favicon-32.png"
-                  alt="Daily Pushup Counter logo"
-                  className="h-9 w-9 object-contain"
-                />
+            {showBranding ? (
+              <div className="flex items-center gap-3">
+                <div className="flex size-14 items-center justify-center rounded-[1.35rem] border border-primary/12 bg-linear-to-br from-white to-primary/12 shadow-[0_18px_40px_rgba(17,87,166,0.14)]">
+                  <img
+                    src="/favicon-32.png"
+                    alt="Daily Pushup Counter logo"
+                    className="h-9 w-9 object-contain"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium tracking-[0.35em] text-primary uppercase">
+                    Daily Pushup Counter
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Quick sets, clearer progress.
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium tracking-[0.35em] text-primary uppercase">
-                  Daily Pushup Counter
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Quick sets, clearer progress.
-                </p>
-              </div>
-            </div>
+            ) : null}
             {title ? (
               <div className="space-y-2">
                 <h1 className="text-4xl leading-none font-semibold tracking-[-0.05em] text-foreground">

@@ -6,15 +6,19 @@ export const Route = createFileRoute("/")({ component: App })
 
 function App() {
   return (
-    <AppScreen>
+    <AppScreen showBranding={false}>
       <div className="flex h-full flex-col justify-center gap-10 py-8">
-        <div className="space-y-3 text-center">
-          <h1 className="text-4xl leading-none font-semibold tracking-[-0.06em] text-foreground">
-            Daily Pushup Counter
+        <div className="space-y-5 text-center">
+          <div className="mx-auto flex size-32 items-center justify-center rounded-[2rem] border border-primary/15 bg-linear-to-br from-white via-accent/30 to-primary/15 shadow-[0_28px_60px_rgba(17,87,166,0.2)]">
+            <img
+              src="/app-icon.svg"
+              alt="Daily Pushup Counter logo"
+              className="h-24 w-24 object-contain"
+            />
+          </div>
+          <h1 className="bg-linear-to-r from-primary via-sky-500 to-primary bg-clip-text text-4xl leading-none font-semibold tracking-[0.28em] text-transparent uppercase sm:text-5xl">
+            DAILY PUSHUP COUNTER
           </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
-            Start a challenge or review your recent sessions.
-          </p>
         </div>
 
         <div className="grid gap-3">
