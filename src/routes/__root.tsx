@@ -1,6 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
+import { ReminderBootstrap } from "@/components/reminder-bootstrap"
 
 import appCss from "../styles.css?url"
 
@@ -35,6 +36,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <ReminderBootstrap />
         {children}
         <TanStackDevtools
           config={{

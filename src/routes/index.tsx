@@ -2,6 +2,13 @@ import { Link, createFileRoute } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { AppScreen } from "@/components/app-screen"
+import {
+  REMINDER_SETTINGS_EVENT,
+  getReminderStatus,
+  isReminderStorageKey,
+  requestReminderPermission,
+  setReminderEnabled,
+} from "@/lib/reminders"
 import { initializeSpeech, speakText } from "@/lib/speech"
 
 export const Route = createFileRoute("/")({ component: App })
@@ -13,6 +20,8 @@ type SpeechSupportState = {
   defaultVoiceName: string | null
 }
 
+type ReminderState = ReturnType<typeof getReminderStatus>
+
 function App() {
   const [speechSupport, setSpeechSupport] = useState<SpeechSupportState>({
     supported: false,
@@ -23,6 +32,12 @@ function App() {
   const [audioStatus, setAudioStatus] = useState(
     "Press Test Audio to run a speech check."
   )
+  const [reminderState, setReminderState] = useState<ReminderState>({
+    enabled: false,
+    permission: "unsupported",
+    supported: false,
+  })
+  const [isUpdatingReminder, setIsUpdatingReminder] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -49,6 +64,29 @@ function App() {
 
     return () => {
       cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const syncReminderState = () => {
+      setReminderState(getReminderStatus())
+    }
+
+    const handleStorage = (event: StorageEvent) => {
+      if (!isReminderStorageKey(event.key)) {
+        return
+      }
+
+      syncReminderState()
+    }
+
+    syncReminderState()
+    window.addEventListener(REMINDER_SETTINGS_EVENT, syncReminderState)
+    window.addEventListener("storage", handleStorage)
+
+    return () => {
+      window.removeEventListener(REMINDER_SETTINGS_EVENT, syncReminderState)
+      window.removeEventListener("storage", handleStorage)
     }
   }, [])
 
@@ -87,6 +125,43 @@ function App() {
       },
     })
   }
+
+  async function toggleReminders() {
+    if (reminderState.enabled) {
+      setReminderEnabled(false)
+      return
+    }
+
+    setIsUpdatingReminder(true)
+
+    try {
+      const permission =
+        reminderState.permission === "granted"
+          ? "granted"
+          : await requestReminderPermission()
+
+      if (permission === "granted") {
+        setReminderEnabled(true)
+      }
+    } finally {
+      setReminderState(getReminderStatus())
+      setIsUpdatingReminder(false)
+    }
+  }
+
+  const reminderDescription = !reminderState.supported
+    ? "Browser notifications are not available here."
+    : reminderState.enabled && reminderState.permission === "granted"
+      ? "Reminders are on. This app will send a browser notification every 30 minutes while it stays open."
+      : reminderState.permission === "denied"
+        ? "Notifications are blocked for this site. Allow them in your browser settings to turn reminders on."
+        : "Enable browser reminders to get a 30-minute pushup check-in."
+
+  const reminderButtonLabel = reminderState.enabled
+    ? "Turn Off Reminders"
+    : reminderState.permission === "denied"
+      ? "Blocked in Browser"
+      : "Enable Reminders"
 
   return (
     <AppScreen
@@ -129,6 +204,25 @@ function App() {
             <p className="mt-2 text-xs leading-5 text-[#7d614d]">
               {audioStatus}
             </p>
+          </div>
+          <div className="rounded-[1.75rem] border border-[#ead7c4] bg-white/70 p-5 text-sm leading-6 text-[#6b5140]">
+            <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">
+              Reminders
+            </p>
+            <p className="mt-2 text-sm text-[#1f130b]">{reminderDescription}</p>
+            <Button
+              type="button"
+              variant={reminderState.enabled ? "outline" : "default"}
+              className="mt-4 h-11 rounded-2xl px-4 text-xs font-semibold tracking-[0.2em] uppercase"
+              onClick={toggleReminders}
+              disabled={
+                isUpdatingReminder ||
+                !reminderState.supported ||
+                (!reminderState.enabled && reminderState.permission === "denied")
+              }
+            >
+              {isUpdatingReminder ? "Updating..." : reminderButtonLabel}
+            </Button>
           </div>
         </div>
 
