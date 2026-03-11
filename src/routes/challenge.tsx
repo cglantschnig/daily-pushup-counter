@@ -1,19 +1,13 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { ChevronLeft, CircleHelp } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import type { ChallengeSequencePhase } from "@/lib/challenge-sequence"
 import { AppScreen } from "@/components/app-screen"
 import { Button } from "@/components/ui/button"
+import { getChallengeSequence } from "@/lib/challenge-sequence"
+import { storeChallenge } from "@/lib/challenges"
 import { cancelSpeech, initializeSpeech, speakText } from "@/lib/speech"
 import { getRandomTarget, getRandomWorkout } from "@/lib/workouts"
-
-const COUNTDOWN_STEPS = [
-  { label: "3", speech: "Three" },
-  { label: "2", speech: "Two" },
-  { label: "1", speech: "One" },
-  { label: "GO", speech: "Go" },
-] as const
-
-const COUNTDOWN_STEP_DELAY_MS = 1000
 
 export const Route = createFileRoute("/challenge")({
   component: ChallengeScreen,
@@ -22,12 +16,16 @@ export const Route = createFileRoute("/challenge")({
 function ChallengeScreen() {
   const [target] = useState(() => getRandomTarget())
   const [workout] = useState(() => getRandomWorkout())
+  const challengeSequence = getChallengeSequence(target, workout)
+  const initialStep = challengeSequence[0]
   const [hasStarted, setHasStarted] = useState(false)
   const [isWorkoutTipOpen, setIsWorkoutTipOpen] = useState(false)
-  const [currentStep, setCurrentStep] =
-    useState<(typeof COUNTDOWN_STEPS)[number]["label"]>("3")
-  const countdownTimeoutRef = useRef<number | null>(null)
-  const countdownSessionRef = useRef(0)
+  const [currentStep, setCurrentStep] = useState(initialStep.label)
+  const [sequencePhase, setSequencePhase] = useState<ChallengeSequencePhase>(
+    initialStep.phase
+  )
+  const sequenceTimeoutRef = useRef<number | null>(null)
+  const sequenceSessionRef = useRef(0)
 
   useEffect(() => {
     void initializeSpeech()
@@ -38,52 +36,75 @@ function ChallengeScreen() {
   }, [])
 
   function clearSequence() {
-    countdownSessionRef.current += 1
+    sequenceSessionRef.current += 1
 
-    if (countdownTimeoutRef.current !== null) {
-      window.clearTimeout(countdownTimeoutRef.current)
-      countdownTimeoutRef.current = null
+    if (sequenceTimeoutRef.current !== null) {
+      window.clearTimeout(sequenceTimeoutRef.current)
+      sequenceTimeoutRef.current = null
     }
 
     void cancelSpeech()
   }
 
-  function announceStep(stepIndex: number, sessionId: number) {
-    if (countdownSessionRef.current !== sessionId) {
+  function runSequenceStep(stepIndex: number, sessionId: number) {
+    if (sequenceSessionRef.current !== sessionId) {
       return
     }
 
-    const step = COUNTDOWN_STEPS[stepIndex]
+    const step = challengeSequence[stepIndex]
+
     setCurrentStep(step.label)
+    setSequencePhase(step.phase)
     void speakText(step.speech)
 
-    if (stepIndex === COUNTDOWN_STEPS.length - 1) {
-      countdownTimeoutRef.current = null
+    if (step.phase === "complete") {
+      sequenceTimeoutRef.current = null
+
+      try {
+        storeChallenge({
+          challenge_type: workout.id,
+          timestamp: new Date().toISOString(),
+          amount: target,
+        })
+      } catch {
+        // Ignore storage failures so the challenge flow can finish on screen.
+      }
+
       return
     }
 
-    countdownTimeoutRef.current = window.setTimeout(() => {
-      announceStep(stepIndex + 1, sessionId)
-    }, COUNTDOWN_STEP_DELAY_MS)
+    sequenceTimeoutRef.current = window.setTimeout(() => {
+      runSequenceStep(stepIndex + 1, sessionId)
+    }, step.delayMs ?? 0)
   }
 
   function handleStart() {
-    const sessionId = countdownSessionRef.current + 1
-    countdownSessionRef.current = sessionId
+    const sessionId = sequenceSessionRef.current + 1
+    sequenceSessionRef.current = sessionId
 
-    if (countdownTimeoutRef.current !== null) {
-      window.clearTimeout(countdownTimeoutRef.current)
-      countdownTimeoutRef.current = null
+    if (sequenceTimeoutRef.current !== null) {
+      window.clearTimeout(sequenceTimeoutRef.current)
+      sequenceTimeoutRef.current = null
     }
 
     void cancelSpeech()
     setHasStarted(true)
-    announceStep(0, sessionId)
+    setCurrentStep(initialStep.label)
+    setSequencePhase(initialStep.phase)
+    runSequenceStep(0, sessionId)
   }
 
   function handleExit() {
     clearSequence()
   }
+
+  const isWordStep = Number.isNaN(Number(currentStep))
+  const stageHint =
+    sequencePhase === "countdown"
+      ? "Get into position"
+      : sequencePhase === "active"
+        ? "Follow the audio count"
+        : "Challenge complete"
 
   return (
     <AppScreen
@@ -164,7 +185,7 @@ function ChallengeScreen() {
               <p
                 aria-live="assertive"
                 className={
-                  currentStep === "GO"
+                  isWordStep
                     ? "text-5xl font-semibold tracking-[0.24em] text-primary uppercase sm:text-6xl"
                     : "text-8xl leading-none font-semibold tracking-[-0.08em] text-foreground sm:text-[8rem]"
                 }
@@ -173,7 +194,7 @@ function ChallengeScreen() {
               </p>
             </section>
             <p className="text-center text-sm font-medium tracking-[0.24em] text-muted-foreground uppercase">
-              Get into position
+              {stageHint}
             </p>
           </div>
         ) : (
