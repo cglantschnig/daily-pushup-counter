@@ -11,7 +11,7 @@ function App() {
         <div className="space-y-5 text-center">
           <div className="mx-auto flex size-32 items-center justify-center rounded-[2rem] border border-primary/15 bg-linear-to-br from-white via-accent/30 to-primary/15 shadow-[0_28px_60px_rgba(17,87,166,0.2)]">
             <img
-              src="/app-icon.svg"
+              src="/android-chrome-192x192.png"
               alt="Daily Pushup Counter logo"
               className="h-24 w-24 object-contain"
             />

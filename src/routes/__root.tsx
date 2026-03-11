@@ -38,23 +38,19 @@ export const Route = createRootRoute({
       },
       {
         rel: "manifest",
-        href: "/manifest.json",
-      },
-      {
-        rel: "icon",
-        sizes: "any",
-        href: "/favicon.ico",
-      },
-      {
-        rel: "icon",
-        type: "image/svg+xml",
-        href: "/app-icon.svg",
+        href: "/site.webmanifest",
       },
       {
         rel: "icon",
         type: "image/png",
         sizes: "32x32",
-        href: "/favicon-32.png",
+        href: "/favicon-32x32.png",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "16x16",
+        href: "/favicon-16x16.png",
       },
       {
         rel: "apple-touch-icon",

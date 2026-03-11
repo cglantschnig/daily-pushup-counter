@@ -81,8 +81,8 @@ function getReminderDelay(now: number) {
 async function showReminderNotification() {
   const options: NotificationOptions = {
     body: REMINDER_BODY,
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/android-chrome-192x192.png",
+    badge: "/android-chrome-192x192.png",
     tag: REMINDER_TAG,
   }
 

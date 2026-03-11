@@ -6,8 +6,8 @@ self.addEventListener("periodicsync", (event) => {
   event.waitUntil(
     self.registration.showNotification("Pushup check-in", {
       body: "Time for another quick pushup set.",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      icon: "/android-chrome-192x192.png",
+      badge: "/android-chrome-192x192.png",
       tag: "pushup-reminder",
     })
   )

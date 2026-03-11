@@ -30,7 +30,7 @@ export function AppScreen({
               <div className="flex items-center gap-3">
                 <div className="flex size-14 items-center justify-center rounded-[1.35rem] border border-primary/12 bg-linear-to-br from-white to-primary/12 shadow-[0_18px_40px_rgba(17,87,166,0.14)]">
                   <img
-                    src="/favicon-32.png"
+                    src="/favicon-32x32.png"
                     alt="Daily Pushup Counter logo"
                     className="h-9 w-9 object-contain"
                   />
