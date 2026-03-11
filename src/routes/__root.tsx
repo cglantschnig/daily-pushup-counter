@@ -1,9 +1,20 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
-import { ReminderBootstrap } from "@/components/reminder-bootstrap"
+import { useEffect, useEffectEvent } from "react"
 
 import appCss from "../styles.css?url"
+
+import { ReminderBootstrap } from "@/components/reminder-bootstrap"
+import {
+  LIGHT_THEME_COLOR,
+  THEME_SETTINGS_EVENT,
+  applyThemePreference,
+  getStoredThemePreference,
+  getThemeInitializationScript,
+  isThemeStorageKey,
+  subscribeToSystemThemeChange,
+} from "@/lib/theme"
 
 export const Route = createRootRoute({
   head: () => ({
@@ -17,7 +28,7 @@ export const Route = createRootRoute({
       },
       {
         name: "theme-color",
-        content: "#1157a6",
+        content: LIGHT_THEME_COLOR,
       },
       {
         name: "apple-mobile-web-app-capable",
@@ -64,11 +75,13 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: getThemeInitializationScript() }} />
         <HeadContent />
       </head>
       <body>
+        <ThemeBootstrap />
         <ReminderBootstrap />
         {children}
         <TanStackDevtools
@@ -86,4 +99,46 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   )
+}
+
+function ThemeBootstrap() {
+  const syncTheme = useEffectEvent(() => {
+    applyThemePreference()
+  })
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (!isThemeStorageKey(event.key)) {
+        return
+      }
+
+      syncTheme()
+    }
+
+    const handleThemeChange = () => {
+      syncTheme()
+    }
+
+    const handleSystemThemeChange = () => {
+      if (getStoredThemePreference() !== "system") {
+        return
+      }
+
+      syncTheme()
+    }
+
+    syncTheme()
+    window.addEventListener(THEME_SETTINGS_EVENT, handleThemeChange)
+    window.addEventListener("storage", handleStorage)
+    const unsubscribeFromSystemTheme =
+      subscribeToSystemThemeChange(handleSystemThemeChange)
+
+    return () => {
+      window.removeEventListener(THEME_SETTINGS_EVENT, handleThemeChange)
+      window.removeEventListener("storage", handleStorage)
+      unsubscribeFromSystemTheme()
+    }
+  }, [syncTheme])
+
+  return null
 }

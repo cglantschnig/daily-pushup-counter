@@ -37,7 +37,7 @@ function HistoryScreen() {
       subtitle="Recent pushup sets saved on this device."
     >
       <div className="flex h-full flex-col gap-6">
-        <section className="flex-1 rounded-[1.75rem] border border-primary/12 bg-white/60 p-5 shadow-sm shadow-primary/5">
+        <section className="flex-1 rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
           {challenges.length > 0 ? (
             <div className="space-y-4">
               {challenges.map((challenge, index) => (
@@ -58,7 +58,7 @@ function HistoryScreen() {
               ))}
             </div>
           ) : (
-            <div className="rounded-[1.5rem] border border-dashed border-primary/20 bg-white/52 px-5 py-8 text-center text-sm leading-6 text-muted-foreground">
+            <div className="rounded-[1.5rem] border border-dashed border-primary/20 bg-background/72 px-5 py-8 text-center text-sm leading-6 text-muted-foreground dark:bg-background/32">
               No challenges saved yet. Complete a pushup challenge to see it here.
             </div>
           )}

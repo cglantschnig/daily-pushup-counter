@@ -113,7 +113,7 @@ function ChallengeScreen() {
       subtitle="Follow the spoken countdown, then match your reps to the spoken count."
     >
       <div className="flex h-full flex-col gap-6">
-        <div className="rounded-[1.75rem] border border-primary/12 bg-white/58 p-5 shadow-sm shadow-primary/5">
+        <div className="rounded-[1.75rem] border border-border/70 bg-card/70 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
           <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">
             Target Reps
           </p>
@@ -122,7 +122,7 @@ function ChallengeScreen() {
           </p>
         </div>
 
-        <div className="flex flex-1 flex-col justify-center rounded-[1.75rem] border border-primary/12 bg-white/62 px-6 py-8 text-center shadow-inner shadow-primary/6">
+        <div className="flex flex-1 flex-col justify-center rounded-[1.75rem] border border-border/70 bg-card/74 px-6 py-8 text-center shadow-inner shadow-primary/6 dark:shadow-black/20">
           {phase === "ready" ? (
             <>
               <p className="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">

@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { Bell, BellOff, ChevronLeft } from "lucide-react"
+import { Bell, BellOff, ChevronLeft, LaptopMinimal, Moon, Sun } from "lucide-react"
 import { useEffect, useEffectEvent, useState } from "react"
+import type { ThemePreference } from "@/lib/theme"
 import { AppScreen } from "@/components/app-screen"
 import {
   REMINDER_SETTINGS_EVENT,
@@ -11,8 +12,43 @@ import {
   setReminderEnabled,
   syncPeriodicReminderRegistration,
 } from "@/lib/reminders"
+import {
+  THEME_SETTINGS_EVENT,
+  getStoredThemePreference,
+  isThemeStorageKey,
+  resolveThemePreference,
+  setThemePreference,
+  subscribeToSystemThemeChange,
+} from "@/lib/theme"
 
 type ReminderStatus = ReturnType<typeof getReminderStatus>
+type ThemeOption = {
+  value: ThemePreference
+  label: string
+  description: string
+  icon: typeof LaptopMinimal
+}
+
+const themeOptions: Array<ThemeOption> = [
+  {
+    value: "system",
+    label: "System",
+    description: "Follow your device setting.",
+    icon: LaptopMinimal,
+  },
+  {
+    value: "light",
+    label: "Light",
+    description: "Keep the bright theme.",
+    icon: Sun,
+  },
+  {
+    value: "dark",
+    label: "Dark",
+    description: "Use the darker theme.",
+    icon: Moon,
+  },
+]
 
 export const Route = createFileRoute("/settings")({
   component: SettingsScreen,
@@ -73,6 +109,9 @@ function getReminderSummary(
 }
 
 function SettingsScreen() {
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() =>
+    getStoredThemePreference()
+  )
   const [reminderStatus, setReminderStatus] = useState<ReminderStatus>(() =>
     getReminderStatus()
   )
@@ -86,6 +125,9 @@ function SettingsScreen() {
     setReminderStatus(getReminderStatus())
     setNextReminderAt(getNextReminderAt())
   })
+  const refreshThemePreference = useEffectEvent(() => {
+    setThemePreferenceState(getStoredThemePreference())
+  })
 
   useEffect(() => {
     const handleReminderChange = () => {
@@ -93,6 +135,10 @@ function SettingsScreen() {
     }
 
     const handleStorage = (event: StorageEvent) => {
+      if (isThemeStorageKey(event.key)) {
+        refreshThemePreference()
+      }
+
       if (!isReminderStorageKey(event.key)) {
         return
       }
@@ -108,19 +154,37 @@ function SettingsScreen() {
       refreshReminderStatus()
     }
 
+    const handleThemeChange = () => {
+      refreshThemePreference()
+    }
+
+    const handleSystemThemeChange = () => {
+      if (getStoredThemePreference() !== "system") {
+        return
+      }
+
+      refreshThemePreference()
+    }
+
     refreshReminderStatus()
+    refreshThemePreference()
     window.addEventListener(REMINDER_SETTINGS_EVENT, handleReminderChange)
+    window.addEventListener(THEME_SETTINGS_EVENT, handleThemeChange)
     window.addEventListener("storage", handleStorage)
     document.addEventListener("visibilitychange", handleVisibilityChange)
+    const unsubscribeFromSystemTheme =
+      subscribeToSystemThemeChange(handleSystemThemeChange)
     const intervalId = window.setInterval(refreshReminderStatus, 30_000)
 
     return () => {
       window.removeEventListener(REMINDER_SETTINGS_EVENT, handleReminderChange)
+      window.removeEventListener(THEME_SETTINGS_EVENT, handleThemeChange)
       window.removeEventListener("storage", handleStorage)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
+      unsubscribeFromSystemTheme()
       window.clearInterval(intervalId)
     }
-  }, [refreshReminderStatus])
+  }, [refreshReminderStatus, refreshThemePreference])
 
   const handleToggleNotifications = useEffectEvent(async (enabled: boolean) => {
     setIsSaving(true)
@@ -157,6 +221,11 @@ function SettingsScreen() {
       setIsSaving(false)
     }
   })
+  const handleThemePreferenceChange = useEffectEvent((value: ThemePreference) => {
+    setThemePreference(value)
+    refreshThemePreference()
+  })
+  const resolvedTheme = resolveThemePreference(themePreference)
 
   return (
     <AppScreen
@@ -175,9 +244,66 @@ function SettingsScreen() {
       subtitle="Manage reminder notifications for quick pushup check-ins."
     >
       <div className="flex h-full flex-col gap-6">
-        <section className="rounded-[1.75rem] border border-primary/12 bg-white/60 p-5 shadow-sm shadow-primary/5">
+        <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
           <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-primary/12 bg-linear-to-br from-white to-primary/12 text-primary shadow-[0_18px_40px_rgba(17,87,166,0.1)]">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-primary/12 bg-linear-to-br from-white to-primary/12 text-primary shadow-[0_18px_40px_rgba(17,87,166,0.1)] dark:from-white/10 dark:to-primary/20 dark:shadow-[0_18px_40px_rgba(3,8,20,0.4)]">
+              {resolvedTheme === "dark" ? (
+                <Moon className="size-5" />
+              ) : (
+                <Sun className="size-5" />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div>
+                <p className="text-lg leading-none font-semibold tracking-[-0.03em] text-foreground">
+                  Appearance
+                </p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Choose light or dark mode, or follow your device setting.
+                </p>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {themeOptions.map((option) => {
+                  const Icon = option.icon
+                  const isActive = themePreference === option.value
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={isActive}
+                      className="rounded-[1.25rem] border border-border/70 bg-background/78 px-3 py-3 text-left transition-colors hover:bg-background/95 data-[active=true]:border-primary/30 data-[active=true]:bg-primary/10 data-[active=true]:text-foreground dark:bg-background/30 dark:hover:bg-background/55"
+                      data-active={isActive}
+                      onClick={() => handleThemePreferenceChange(option.value)}
+                    >
+                      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <Icon className="size-4 text-primary" />
+                        <span>{option.label}</span>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                        {option.description}
+                      </p>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                Active theme:{" "}
+                <span className="font-medium text-foreground">
+                  {resolvedTheme === "dark" ? "Dark" : "Light"}
+                </span>
+                {themePreference === "system" ? " (following system)." : "."}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
+          <div className="flex items-start gap-4">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-primary/12 bg-linear-to-br from-white to-primary/12 text-primary shadow-[0_18px_40px_rgba(17,87,166,0.1)] dark:from-white/10 dark:to-primary/20 dark:shadow-[0_18px_40px_rgba(3,8,20,0.4)]">
               {reminderStatus.enabled ? (
                 <Bell className="size-5" />
               ) : (
@@ -209,7 +335,7 @@ function SettingsScreen() {
                   }
                 >
                   <span
-                    className="size-6 rounded-full bg-white shadow-sm transition-transform data-[checked=true]:translate-x-6"
+                    className="size-6 rounded-full bg-white shadow-sm transition-transform data-[checked=true]:translate-x-6 dark:bg-card"
                     data-checked={reminderStatus.enabled}
                   />
                 </button>

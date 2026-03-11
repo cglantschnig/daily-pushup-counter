@@ -1,5 +1,5 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react"
 import { Sparkles } from "lucide-react"
+import type { ComponentPropsWithoutRef, ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -36,7 +36,7 @@ export function StarBorder({
       >
         <Sparkles className="size-3.5 animate-pulse [animation-delay:900ms]" />
       </div>
-      <div className="relative rounded-[calc(1.6rem-1px)] bg-white/18">
+      <div className="relative rounded-[calc(1.6rem-1px)] bg-card/22 dark:bg-card/60">
         {children}
       </div>
     </div>
