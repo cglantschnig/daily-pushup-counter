@@ -16,6 +16,18 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
+        name: "theme-color",
+        content: "#0d4f99",
+      },
+      {
+        name: "apple-mobile-web-app-capable",
+        content: "yes",
+      },
+      {
+        name: "apple-mobile-web-app-title",
+        content: "Pushup Counter",
+      },
+      {
         title: "Daily Pushup Counter",
       },
     ],
@@ -23,6 +35,26 @@ export const Route = createRootRoute({
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "manifest",
+        href: "/manifest.json",
+      },
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "/app-icon.svg",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "32x32",
+        href: "/favicon-32.png",
+      },
+      {
+        rel: "apple-touch-icon",
+        sizes: "180x180",
+        href: "/apple-touch-icon.png",
       },
     ],
   }),

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="pageBg" x1="180" x2="844" y1="140" y2="884" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1157a6" />
+      <stop offset="1" stop-color="#08346e" />
+    </linearGradient>
+    <radialGradient id="badgeFill" cx="0" cy="0" r="1" gradientTransform="translate(512 404) scale(356)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#69cbff" />
+      <stop offset="1" stop-color="#2d92d1" />
+    </radialGradient>
+    <linearGradient id="badgeGloss" x1="408" x2="638" y1="140" y2="532" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".42" />
+      <stop offset=".7" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#pageBg)" />
+  <circle cx="512" cy="456" r="366" fill="url(#badgeFill)" />
+  <circle cx="512" cy="456" r="366" fill="none" stroke="#d7f4ff" stroke-width="16" opacity=".85" />
+  <circle cx="512" cy="456" r="340" fill="none" stroke="#ffffff" stroke-width="8" opacity=".45" />
+  <ellipse cx="464" cy="286" rx="228" ry="118" fill="url(#badgeGloss)" opacity=".75" />
+  <g fill="#ffffff">
+    <path d="M512 206 528 256 581 256 538 287 554 338 512 307 470 338 486 287 443 256 496 256Z" />
+    <path d="M427 244 439 281 478 281 447 304 459 341 427 318 395 341 407 304 376 281 415 281Z" opacity=".94" />
+    <path d="M597 244 609 281 648 281 617 304 629 341 597 318 565 341 577 304 546 281 585 281Z" opacity=".94" />
+  </g>
+  <path
+    fill="#ffffff"
+    d="M286 704c83 27 178 30 286 11 76-13 145-34 206-62l-35-26 29-80 102 17-18 100-38-28c-59 40-129 71-210 91-122 31-232 27-330-11Z"
+  />
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="676" cy="402" r="36" fill="#ffffff" stroke="none" />
+    <path d="M629 430 563 474 492 560" stroke-width="46" />
+    <path d="M560 472 504 442 458 490" stroke-width="38" />
+    <path d="M564 478 645 536 618 608" stroke-width="38" />
+    <path d="M492 560 390 651 329 714" stroke-width="36" />
+    <path d="M494 560 456 654 452 723" stroke-width="34" />
+  </g>
+  <path
+    d="M914 919c0-20 16-36 36-36-20 0-36-16-36-36 0 20-16 36-36 36 20 0 36 16 36 36Z"
+    fill="#cceeff"
+    opacity=".9"
+  />
+</svg>
