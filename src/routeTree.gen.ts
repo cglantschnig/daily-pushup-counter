@@ -9,17 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as ChallengeRouteImport } from './routes/challenge'
 import { Route as IndexRouteImport } from './routes/index'
 
-const WorkoutRoute = WorkoutRouteImport.update({
-  id: '/workout',
-  path: '/workout',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -46,14 +40,12 @@ export interface FileRoutesByFullPath {
   '/challenge': typeof ChallengeRoute
   '/history': typeof HistoryRoute
   '/settings': typeof SettingsRoute
-  '/workout': typeof WorkoutRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/challenge': typeof ChallengeRoute
   '/history': typeof HistoryRoute
   '/settings': typeof SettingsRoute
-  '/workout': typeof WorkoutRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,14 +53,13 @@ export interface FileRoutesById {
   '/challenge': typeof ChallengeRoute
   '/history': typeof HistoryRoute
   '/settings': typeof SettingsRoute
-  '/workout': typeof WorkoutRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/challenge' | '/history' | '/settings' | '/workout'
+  fullPaths: '/' | '/challenge' | '/history' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/challenge' | '/history' | '/settings' | '/workout'
-  id: '__root__' | '/' | '/challenge' | '/history' | '/settings' | '/workout'
+  to: '/' | '/challenge' | '/history' | '/settings'
+  id: '__root__' | '/' | '/challenge' | '/history' | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,18 +67,10 @@ export interface RootRouteChildren {
   ChallengeRoute: typeof ChallengeRoute
   HistoryRoute: typeof HistoryRoute
   SettingsRoute: typeof SettingsRoute
-  WorkoutRoute: typeof WorkoutRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/workout': {
-      id: '/workout'
-      path: '/workout'
-      fullPath: '/workout'
-      preLoaderRoute: typeof WorkoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -124,7 +107,6 @@ const rootRouteChildren: RootRouteChildren = {
   ChallengeRoute: ChallengeRoute,
   HistoryRoute: HistoryRoute,
   SettingsRoute: SettingsRoute,
-  WorkoutRoute: WorkoutRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

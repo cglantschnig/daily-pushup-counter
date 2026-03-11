@@ -264,7 +264,7 @@ function SettingsScreen() {
                 </p>
               </div>
 
-              <div className="theme-options-grid mt-4 grid grid-cols-3 gap-2">
+              <div className="theme-options-grid mt-4 grid grid-cols-1 gap-2">
                 {themeOptions.map((option) => {
                   const Icon = option.icon
                   const isActive = themePreference === option.value

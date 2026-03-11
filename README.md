@@ -6,7 +6,7 @@ Daily Pushup Counter is a small mobile-first workout app for running quick pushu
 
 - Starts a challenge flow from a simple home screen.
 - Generates a random target between 5 and 10 reps.
-- Launches a workout screen with a spoken `3, 2, 1, START` countdown.
+- Starts the spoken `3, 2, 1, START` countdown directly from the challenge screen.
 - Stores completed challenges locally in the browser.
 - Shows recent history on-device.
 - Lets the user switch between system, light, and dark themes.
@@ -15,8 +15,7 @@ Daily Pushup Counter is a small mobile-first workout app for running quick pushu
 ## Routes
 
 - `/` home screen with the primary challenge entry point
-- `/challenge` generated workout summary and large `GO` button
-- `/workout` audio-assisted countdown before the set starts
+- `/challenge` generated workout summary, large `GO` button, and audio-assisted countdown
 - `/history` recent challenge history from `localStorage`
 - `/settings` theme controls and reminder notification settings
 
