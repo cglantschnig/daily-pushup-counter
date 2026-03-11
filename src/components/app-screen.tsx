@@ -1,9 +1,8 @@
 import type { ReactNode } from "react"
-import logoUrl from "@/logo.svg?url"
 
 type AppScreenProps = {
-  title: string
-  subtitle: string
+  title?: string
+  subtitle?: string
   children: ReactNode
 }
 
@@ -21,7 +20,7 @@ export function AppScreen({ title, subtitle, children }: AppScreenProps) {
             <div className="flex items-center gap-3">
               <div className="flex size-14 items-center justify-center rounded-[1.35rem] border border-primary/12 bg-linear-to-br from-white to-primary/12 shadow-[0_18px_40px_rgba(17,87,166,0.14)]">
                 <img
-                  src={logoUrl}
+                  src="/favicon-32.png"
                   alt="Daily Pushup Counter logo"
                   className="h-9 w-9 object-contain"
                 />
@@ -35,14 +34,18 @@ export function AppScreen({ title, subtitle, children }: AppScreenProps) {
                 </p>
               </div>
             </div>
-            <div className="space-y-2">
-              <h1 className="text-4xl leading-none font-semibold tracking-[-0.05em] text-foreground">
-                {title}
-              </h1>
-              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-                {subtitle}
-              </p>
-            </div>
+            {title ? (
+              <div className="space-y-2">
+                <h1 className="text-4xl leading-none font-semibold tracking-[-0.05em] text-foreground">
+                  {title}
+                </h1>
+                {subtitle ? (
+                  <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+                    {subtitle}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </header>
 
           {children}
