@@ -39,7 +39,7 @@ export function getChallengeSequence(
     ...repSteps,
     {
       label: "DONE",
-      speech: "Done",
+      speech: "",
       phase: "complete" as const,
       delayMs: null,
     },

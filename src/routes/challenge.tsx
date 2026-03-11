@@ -57,7 +57,9 @@ function ChallengeScreen() {
 
     setCurrentStep(step.label)
     setSequencePhase(step.phase)
-    void speakText(step.speech)
+    if (step.speech) {
+      void speakText(step.speech)
+    }
 
     if (step.phase === "complete") {
       sequenceTimeoutRef.current = null
@@ -190,15 +192,14 @@ function ChallengeScreen() {
           <div className="flex flex-1 flex-col justify-center pt-2">
             <section className="countdown-stage flex min-h-80 items-center justify-center rounded-[2rem] border border-border/70 bg-card/68 p-6 shadow-[0_28px_80px_rgba(17,72,137,0.16)] dark:shadow-[0_28px_80px_rgba(3,8,20,0.36)]">
               {sequencePhase === "complete" ? (
-                <Button
+                <button
                   type="button"
-                  size="lg"
                   onClick={handleComplete}
                   disabled={isCompleting}
-                  className="h-16 rounded-[1.4rem] px-8 text-lg font-semibold tracking-[0.24em] uppercase"
+                  className="text-lg font-semibold tracking-[0.24em] text-primary uppercase transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50"
                 >
                   Done
-                </Button>
+                </button>
               ) : (
                 <p
                   aria-live="assertive"

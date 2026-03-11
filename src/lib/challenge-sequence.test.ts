@@ -24,7 +24,7 @@ describe("challenge sequence", () => {
     expect(sequence[8]?.delayMs).toBe(2000)
     expect(sequence[9]).toMatchObject({
       label: "DONE",
-      speech: "Done",
+      speech: "",
       phase: "complete",
       delayMs: null,
     })
