@@ -170,46 +170,46 @@ function App() {
     >
       <div className="flex h-full flex-col justify-between gap-8">
         <div className="space-y-3">
-          <div className="rounded-[1.75rem] border border-[#f0d9c4] bg-[#fff5ea] p-5 text-sm leading-6 text-[#6b5140]">
+          <div className="rounded-[1.75rem] border border-primary/12 bg-white/58 p-5 text-sm leading-6 text-muted-foreground shadow-sm shadow-primary/5">
             Hit start to generate a random pushup challenge between 5 and 10 reps.
           </div>
-          <div className="rounded-[1.75rem] border border-[#ead7c4] bg-white/70 p-5 text-sm leading-6 text-[#6b5140]">
+          <div className="rounded-[1.75rem] border border-primary/12 bg-white/58 p-5 text-sm leading-6 text-muted-foreground shadow-sm shadow-primary/5">
             <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">
               Audio Check
             </p>
             <p className="mt-2">
               Easy Speech support:{" "}
-              <span className="font-semibold text-[#1f130b]">
+              <span className="font-semibold text-foreground">
                 {speechSupport.supported ? "available" : "not available"}
               </span>
             </p>
             <p>
               Initialized:{" "}
-              <span className="font-semibold text-[#1f130b]">
+              <span className="font-semibold text-foreground">
                 {speechSupport.initialized ? "yes" : "no"}
               </span>
             </p>
             <p>
               Voices detected:{" "}
-              <span className="font-semibold text-[#1f130b]">
+              <span className="font-semibold text-foreground">
                 {speechSupport.voiceCount}
               </span>
             </p>
             <p>
               Default voice:{" "}
-              <span className="font-semibold text-[#1f130b]">
+              <span className="font-semibold text-foreground">
                 {speechSupport.defaultVoiceName ?? "none"}
               </span>
             </p>
-            <p className="mt-2 text-xs leading-5 text-[#7d614d]">
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
               {audioStatus}
             </p>
           </div>
-          <div className="rounded-[1.75rem] border border-[#ead7c4] bg-white/70 p-5 text-sm leading-6 text-[#6b5140]">
+          <div className="rounded-[1.75rem] border border-primary/12 bg-white/58 p-5 text-sm leading-6 text-muted-foreground shadow-sm shadow-primary/5">
             <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">
               Reminders
             </p>
-            <p className="mt-2 text-sm text-[#1f130b]">{reminderDescription}</p>
+            <p className="mt-2 text-sm text-foreground">{reminderDescription}</p>
             <Button
               type="button"
               variant={reminderState.enabled ? "outline" : "default"}
@@ -238,14 +238,14 @@ function App() {
             asChild
             variant="outline"
             size="lg"
-            className="h-14 rounded-2xl border-[#e7c5a8] bg-white/60 text-sm font-semibold tracking-[0.2em] text-[#1f130b] uppercase"
+            className="h-14 rounded-2xl text-sm font-semibold tracking-[0.2em] uppercase"
           >
             <Link to="/history">View History</Link>
           </Button>
           <Button
             variant="ghost"
             size="lg"
-            className="h-12 rounded-2xl text-sm font-semibold tracking-[0.18em] text-[#6b5140] uppercase"
+            className="h-12 rounded-2xl text-sm font-semibold tracking-[0.18em] uppercase"
             onClick={testSpeechSynthesis}
             disabled={!speechSupport.supported || !speechSupport.initialized}
           >

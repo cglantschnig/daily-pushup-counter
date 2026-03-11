@@ -113,25 +113,25 @@ function ChallengeScreen() {
       subtitle="Follow the spoken countdown, then match your reps to the spoken count."
     >
       <div className="flex h-full flex-col gap-6">
-        <div className="rounded-[1.75rem] border border-[#f0d9c4] bg-[#fff5ea] p-5">
+        <div className="rounded-[1.75rem] border border-primary/12 bg-white/58 p-5 shadow-sm shadow-primary/5">
           <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">
             Target Reps
           </p>
-          <p className="mt-3 text-7xl leading-none font-semibold tracking-[-0.08em] text-[#1f130b]">
+          <p className="mt-3 text-7xl leading-none font-semibold tracking-[-0.08em] text-foreground">
             {target}
           </p>
         </div>
 
-        <div className="flex flex-1 flex-col justify-center rounded-[1.75rem] border border-[#f1dfcf] bg-white/75 px-6 py-8 text-center shadow-inner">
+        <div className="flex flex-1 flex-col justify-center rounded-[1.75rem] border border-primary/12 bg-white/62 px-6 py-8 text-center shadow-inner shadow-primary/6">
           {phase === "ready" ? (
             <>
-              <p className="text-sm font-medium tracking-[0.3em] text-[#7d614d] uppercase">
+              <p className="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
                 Random Challenge
               </p>
-              <p className="mt-4 text-5xl leading-none font-semibold tracking-[-0.08em] text-[#1f130b]">
+              <p className="mt-4 text-5xl leading-none font-semibold tracking-[-0.08em] text-foreground">
                 {target}
               </p>
-              <p className="mt-3 text-sm leading-6 text-[#6b5140]">
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 Press GO when you are in position.
               </p>
             </>
@@ -139,10 +139,10 @@ function ChallengeScreen() {
 
           {phase === "countdown" ? (
             <>
-              <p className="text-sm font-medium tracking-[0.3em] text-[#7d614d] uppercase">
+              <p className="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
                 Countdown
               </p>
-              <p className="mt-4 text-6xl leading-none font-semibold tracking-[-0.08em] text-[#1f130b]">
+              <p className="mt-4 text-6xl leading-none font-semibold tracking-[-0.08em] text-foreground">
                 {countdownValue}
               </p>
             </>
@@ -150,13 +150,13 @@ function ChallengeScreen() {
 
           {phase === "running" ? (
             <>
-              <p className="text-sm font-medium tracking-[0.3em] text-[#7d614d] uppercase">
+              <p className="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
                 Count
               </p>
-              <p className="mt-4 text-6xl leading-none font-semibold tracking-[-0.08em] text-[#1f130b]">
+              <p className="mt-4 text-6xl leading-none font-semibold tracking-[-0.08em] text-foreground">
                 {currentCount}
               </p>
-              <p className="mt-3 text-sm leading-6 text-[#6b5140]">
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 Keep moving until you hit {target}.
               </p>
             </>
@@ -167,10 +167,10 @@ function ChallengeScreen() {
               <p className="text-sm font-medium tracking-[0.3em] text-primary uppercase">
                 Complete
               </p>
-              <p className="mt-4 text-5xl leading-none font-semibold tracking-[-0.08em] text-[#1f130b]">
+              <p className="mt-4 text-5xl leading-none font-semibold tracking-[-0.08em] text-foreground">
                 {target} reps
               </p>
-              <p className="mt-3 text-sm leading-6 text-[#6b5140]">
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 This challenge has been saved to your history.
               </p>
             </>
@@ -201,7 +201,7 @@ function ChallengeScreen() {
           <Button
             variant="outline"
             size="lg"
-            className="h-14 rounded-2xl border-[#e7c5a8] bg-white/60 text-sm font-semibold tracking-[0.2em] text-[#1f130b] uppercase"
+            className="h-14 rounded-2xl text-sm font-semibold tracking-[0.2em] uppercase"
             onClick={resetChallenge}
             disabled={isActive}
           >
@@ -212,7 +212,7 @@ function ChallengeScreen() {
             asChild
             variant="ghost"
             size="lg"
-            className="h-12 rounded-2xl text-sm font-semibold tracking-[0.18em] text-[#6b5140] uppercase"
+            className="h-12 rounded-2xl text-sm font-semibold tracking-[0.18em] uppercase"
           >
             <Link to="/history">View History</Link>
           </Button>
@@ -221,7 +221,7 @@ function ChallengeScreen() {
             asChild
             variant="ghost"
             size="lg"
-            className="h-12 rounded-2xl text-sm font-semibold tracking-[0.18em] text-[#6b5140] uppercase"
+            className="h-12 rounded-2xl text-sm font-semibold tracking-[0.18em] uppercase"
           >
             <Link to="/">Back Home</Link>
           </Button>
