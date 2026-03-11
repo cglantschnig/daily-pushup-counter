@@ -254,7 +254,7 @@ function SettingsScreen() {
               )}
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div className="theme-options-content min-w-0 flex-1">
               <div>
                 <p className="text-lg leading-none font-semibold tracking-[-0.03em] text-foreground">
                   Appearance
@@ -264,7 +264,7 @@ function SettingsScreen() {
                 </p>
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="theme-options-grid mt-4 grid grid-cols-3 gap-2">
                 {themeOptions.map((option) => {
                   const Icon = option.icon
                   const isActive = themePreference === option.value

@@ -139,3 +139,15 @@
       linear-gradient(160deg, rgb(11 18 32) 0%, rgb(17 24 39) 48%, rgb(24 32 51) 100%);
     }
 }
+
+@layer components {
+  .theme-options-content {
+    container-type: inline-size;
+  }
+
+  @container (max-width: 32rem) {
+    .theme-options-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
