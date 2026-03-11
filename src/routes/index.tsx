@@ -33,6 +33,14 @@ function App() {
           >
             <Link to="/history">View History</Link>
           </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="lg"
+            className="h-12 rounded-2xl text-sm font-semibold tracking-[0.18em] uppercase"
+          >
+            <Link to="/settings">Settings</Link>
+          </Button>
         </div>
       </div>
     </AppScreen>
