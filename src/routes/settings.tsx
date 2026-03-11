@@ -170,6 +170,7 @@ function SettingsScreen() {
         </Link>
       }
       showBranding={false}
+      showVersion
       title="Settings"
       subtitle="Manage reminder notifications for quick pushup check-ins."
     >

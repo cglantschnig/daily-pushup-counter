@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 type AppScreenProps = {
   headerStart?: ReactNode
   showBranding?: boolean
+  showVersion?: boolean
   title?: string
   subtitle?: string
   children: ReactNode
@@ -11,6 +12,7 @@ type AppScreenProps = {
 export function AppScreen({
   headerStart,
   showBranding = true,
+  showVersion = false,
   title,
   subtitle,
   children,
@@ -62,9 +64,11 @@ export function AppScreen({
           {children}
         </section>
 
-        <footer className="pt-4 text-center text-xs font-medium tracking-[0.28em] text-primary/75 uppercase">
-          Version {__APP_VERSION__}
-        </footer>
+        {showVersion ? (
+          <footer className="pt-4 text-center text-xs font-medium tracking-[0.28em] text-primary/75 uppercase">
+            Version {__APP_VERSION__}
+          </footer>
+        ) : null}
       </div>
     </main>
   )
