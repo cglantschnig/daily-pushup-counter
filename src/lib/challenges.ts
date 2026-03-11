@@ -1,8 +1,10 @@
+import type { WorkoutId } from "@/lib/workouts"
+
 export type ChallengeRecord = {
   id: string
-  challenge_type: "pushup"
+  challenge_type: WorkoutId
   timestamp: string
-  amount: number
+  reps_count: number
 }
 
 const STORAGE_KEY = "daily-pushup-counter:challenges"
@@ -16,10 +18,43 @@ function isChallengeRecord(value: unknown): value is ChallengeRecord {
 
   return (
     typeof candidate.id === "string" &&
-    candidate.challenge_type === "pushup" &&
+    typeof candidate.challenge_type === "string" &&
     typeof candidate.timestamp === "string" &&
-    typeof candidate.amount === "number"
+    typeof candidate.reps_count === "number"
   )
+}
+
+function normalizeStoredChallenge(value: unknown): ChallengeRecord | null {
+  if (isChallengeRecord(value)) {
+    return value
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return null
+  }
+
+  const legacyCandidate = value as {
+    id?: unknown
+    challenge_type?: unknown
+    timestamp?: unknown
+    amount?: unknown
+  }
+
+  if (
+    typeof legacyCandidate.id === "string" &&
+    typeof legacyCandidate.challenge_type === "string" &&
+    typeof legacyCandidate.timestamp === "string" &&
+    typeof legacyCandidate.amount === "number"
+  ) {
+    return {
+      id: legacyCandidate.id,
+      challenge_type: legacyCandidate.challenge_type as WorkoutId,
+      timestamp: legacyCandidate.timestamp,
+      reps_count: legacyCandidate.amount,
+    }
+  }
+
+  return null
 }
 
 export function getStoredChallenges(): Array<ChallengeRecord> {
@@ -41,7 +76,8 @@ export function getStoredChallenges(): Array<ChallengeRecord> {
     }
 
     return parsedValue
-      .filter(isChallengeRecord)
+      .map(normalizeStoredChallenge)
+      .filter((challenge): challenge is ChallengeRecord => challenge !== null)
       .sort(
         (left, right) =>
           new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()

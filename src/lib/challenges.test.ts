@@ -14,14 +14,14 @@ describe("challenge storage", () => {
     const firstChallenge = storeChallenge({
       challenge_type: "pushup",
       timestamp: "2026-03-10T10:00:00.000Z",
-      amount: 6,
+      reps_count: 6,
     })
 
     vi.setSystemTime(new Date("2026-03-10T11:00:00.000Z"))
     const secondChallenge = storeChallenge({
       challenge_type: "pushup",
       timestamp: "2026-03-10T11:00:00.000Z",
-      amount: 9,
+      reps_count: 9,
     })
 
     const challenges = getStoredChallenges()
@@ -39,7 +39,7 @@ describe("challenge storage", () => {
           id: "valid",
           challenge_type: "pushup",
           timestamp: "2026-03-10T11:00:00.000Z",
-          amount: 8,
+          reps_count: 8,
         },
         {
           challenge_type: "situp",
@@ -52,7 +52,30 @@ describe("challenge storage", () => {
         id: "valid",
         challenge_type: "pushup",
         timestamp: "2026-03-10T11:00:00.000Z",
-        amount: 8,
+        reps_count: 8,
+      },
+    ])
+  })
+
+  it("normalizes legacy amount values from localStorage", () => {
+    window.localStorage.setItem(
+      "daily-pushup-counter:challenges",
+      JSON.stringify([
+        {
+          id: "legacy",
+          challenge_type: "pushup",
+          timestamp: "2026-03-10T11:00:00.000Z",
+          amount: 8,
+        },
+      ])
+    )
+
+    expect(getStoredChallenges()).toEqual([
+      {
+        id: "legacy",
+        challenge_type: "pushup",
+        timestamp: "2026-03-10T11:00:00.000Z",
+        reps_count: 8,
       },
     ])
   })

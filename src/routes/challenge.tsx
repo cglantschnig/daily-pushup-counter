@@ -1,5 +1,5 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
-import { ChevronLeft, CircleHelp } from "lucide-react"
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
+import { ChevronLeft, CircleHelp, DoorOpen } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import type { ChallengeSequencePhase } from "@/lib/challenge-sequence"
 import { AppScreen } from "@/components/app-screen"
@@ -14,11 +14,13 @@ export const Route = createFileRoute("/challenge")({
 })
 
 function ChallengeScreen() {
+  const navigate = useNavigate()
   const [target] = useState(() => getRandomTarget())
   const [workout] = useState(() => getRandomWorkout())
   const challengeSequence = getChallengeSequence(target, workout)
   const initialStep = challengeSequence[0]
   const [hasStarted, setHasStarted] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
   const [isWorkoutTipOpen, setIsWorkoutTipOpen] = useState(false)
   const [currentStep, setCurrentStep] = useState(initialStep.label)
   const [sequencePhase, setSequencePhase] = useState<ChallengeSequencePhase>(
@@ -59,17 +61,6 @@ function ChallengeScreen() {
 
     if (step.phase === "complete") {
       sequenceTimeoutRef.current = null
-
-      try {
-        storeChallenge({
-          challenge_type: workout.id,
-          timestamp: new Date().toISOString(),
-          amount: target,
-        })
-      } catch {
-        // Ignore storage failures so the challenge flow can finish on screen.
-      }
-
       return
     }
 
@@ -98,13 +89,28 @@ function ChallengeScreen() {
     clearSequence()
   }
 
+  async function handleComplete() {
+    if (isCompleting) {
+      return
+    }
+
+    setIsCompleting(true)
+    clearSequence()
+
+    try {
+      storeChallenge({
+        challenge_type: workout.id,
+        timestamp: new Date().toISOString(),
+        reps_count: target,
+      })
+    } catch {
+      // Ignore storage failures so the challenge flow can return home.
+    }
+
+    await navigate({ to: "/" })
+  }
+
   const isWordStep = Number.isNaN(Number(currentStep))
-  const stageHint =
-    sequencePhase === "countdown"
-      ? "Get into position"
-      : sequencePhase === "active"
-        ? "Follow the audio count"
-        : "Challenge complete"
 
   return (
     <AppScreen
@@ -124,8 +130,9 @@ function ChallengeScreen() {
           <Link
             to="/"
             onClick={handleExit}
-            className="text-sm font-medium text-primary transition-opacity hover:opacity-75"
+            className="inline-flex items-center gap-1 text-sm font-medium text-destructive transition-opacity hover:opacity-75"
           >
+            <DoorOpen className="size-4" />
             Exit
           </Link>
         ) : null
@@ -161,7 +168,7 @@ function ChallengeScreen() {
                 <div
                   id="workout-tip"
                   role="tooltip"
-                  className="absolute top-full left-1/2 z-10 mt-3 w-64 -translate-x-1/2 rounded-2xl border border-border/70 bg-popover px-4 py-3 text-left text-sm leading-6 text-popover-foreground shadow-lg shadow-primary/10"
+                  className="absolute top-full left-1/2 z-10 mt-4 w-64 -translate-x-1/2 rounded-xl border border-border/70 bg-popover px-5 py-4 text-left text-sm leading-6 text-popover-foreground shadow-lg shadow-primary/10"
                 >
                   {workout.instructions}
                 </div>
@@ -180,22 +187,31 @@ function ChallengeScreen() {
         </section>
 
         {hasStarted ? (
-          <div className="flex flex-1 flex-col justify-center gap-6 pt-2">
+          <div className="flex flex-1 flex-col justify-center pt-2">
             <section className="countdown-stage flex min-h-80 items-center justify-center rounded-[2rem] border border-border/70 bg-card/68 p-6 shadow-[0_28px_80px_rgba(17,72,137,0.16)] dark:shadow-[0_28px_80px_rgba(3,8,20,0.36)]">
-              <p
-                aria-live="assertive"
-                className={
-                  isWordStep
-                    ? "text-5xl font-semibold tracking-[0.24em] text-primary uppercase sm:text-6xl"
-                    : "text-8xl leading-none font-semibold tracking-[-0.08em] text-foreground sm:text-[8rem]"
-                }
-              >
-                {currentStep}
-              </p>
+              {sequencePhase === "complete" ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={handleComplete}
+                  disabled={isCompleting}
+                  className="h-16 rounded-[1.4rem] px-8 text-lg font-semibold tracking-[0.24em] uppercase"
+                >
+                  Done
+                </Button>
+              ) : (
+                <p
+                  aria-live="assertive"
+                  className={
+                    isWordStep
+                      ? "text-5xl font-semibold tracking-[0.24em] text-primary uppercase sm:text-6xl"
+                      : "text-8xl leading-none font-semibold tracking-[-0.08em] text-foreground sm:text-[8rem]"
+                  }
+                >
+                  {currentStep}
+                </p>
+              )}
             </section>
-            <p className="text-center text-sm font-medium tracking-[0.24em] text-muted-foreground uppercase">
-              {stageHint}
-            </p>
           </div>
         ) : (
           <div className="flex flex-1 flex-col justify-center space-y-4 pt-10 text-center sm:pt-14">

@@ -44,7 +44,7 @@ function HistoryScreen() {
                 <article key={challenge.id}>
                   <div className="flex items-start justify-between gap-4">
                     <p className="text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
-                      {challenge.amount} reps
+                      {challenge.reps_count} reps
                     </p>
                     <p className="max-w-[11rem] text-right text-sm leading-6 text-muted-foreground">
                       {dateFormatter.format(new Date(challenge.timestamp))}
