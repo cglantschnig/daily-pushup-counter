@@ -5,6 +5,7 @@ import { useEffect, useEffectEvent } from "react"
 
 import appCss from "../styles.css?url"
 
+import { ConvexClientProvider } from "@/components/convex-provider"
 import { ReminderBootstrap } from "@/components/reminder-bootstrap"
 import {
   LIGHT_THEME_COLOR,
@@ -82,8 +83,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ThemeBootstrap />
-        <ReminderBootstrap />
-        {children}
+        <ConvexClientProvider>
+          <ReminderBootstrap />
+          {children}
+        </ConvexClientProvider>
         <TanStackDevtools
           config={{
             position: "bottom-right",

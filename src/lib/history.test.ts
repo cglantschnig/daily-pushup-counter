@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 import type { ChallengeRecord } from "@/lib/challenges"
-import { getCurrentMonthDailyRepTotals } from "@/lib/history"
+import {
+  getCurrentMonthDailyRepTotals,
+  getCurrentMonthRange,
+} from "@/lib/history"
 
 function createChallenge(
   id: string,
@@ -16,6 +19,15 @@ function createChallenge(
 }
 
 describe("history helpers", () => {
+  it("returns the current month start and end timestamps in local time", () => {
+    const now = new Date(2026, 2, 20, 9, 0, 0)
+
+    expect(getCurrentMonthRange(now)).toEqual({
+      startMs: new Date(2026, 2, 1).getTime(),
+      endMs: new Date(2026, 3, 1).getTime(),
+    })
+  })
+
   it("sums reps for each day in the current month", () => {
     const now = new Date(2026, 2, 11, 9, 0, 0)
     const totals = getCurrentMonthDailyRepTotals(

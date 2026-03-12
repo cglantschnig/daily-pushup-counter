@@ -1,82 +1,34 @@
-// @vitest-environment jsdom
+import { describe, expect, it } from "vitest"
+import { toChallengeRecord } from "@/lib/challenges"
 
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import { getStoredChallenges, storeChallenge } from "@/lib/challenges"
-
-describe("challenge storage", () => {
-  beforeEach(() => {
-    window.localStorage.clear()
-    vi.useRealTimers()
-  })
-
-  it("stores pushup challenges with the newest entry first", () => {
-    vi.setSystemTime(new Date("2026-03-10T10:00:00.000Z"))
-    const firstChallenge = storeChallenge({
-      challenge_type: "pushup",
-      timestamp: "2026-03-10T10:00:00.000Z",
-      reps_count: 6,
-    })
-
-    vi.setSystemTime(new Date("2026-03-10T11:00:00.000Z"))
-    const secondChallenge = storeChallenge({
+describe("challenge records", () => {
+  it("maps Convex challenge fields to the UI record shape", () => {
+    expect(
+      toChallengeRecord({
+        id: "challenge-1",
+        challengeType: "pushup",
+        completedAt: Date.UTC(2026, 2, 10, 11, 0, 0),
+        repsCount: 8,
+      })
+    ).toEqual({
+      id: "challenge-1",
       challenge_type: "pushup",
       timestamp: "2026-03-10T11:00:00.000Z",
-      reps_count: 9,
+      reps_count: 8,
     })
-
-    const challenges = getStoredChallenges()
-
-    expect(challenges).toHaveLength(2)
-    expect(challenges[0]?.id).toBe(secondChallenge.id)
-    expect(challenges[1]?.id).toBe(firstChallenge.id)
   })
 
-  it("ignores malformed values in localStorage", () => {
-    window.localStorage.setItem(
-      "daily-pushup-counter:challenges",
-      JSON.stringify([
-        {
-          id: "valid",
-          challenge_type: "pushup",
-          timestamp: "2026-03-10T11:00:00.000Z",
-          reps_count: 8,
-        },
-        {
-          challenge_type: "situp",
-        },
-      ])
-    )
-
-    expect(getStoredChallenges()).toEqual([
-      {
-        id: "valid",
-        challenge_type: "pushup",
-        timestamp: "2026-03-10T11:00:00.000Z",
-        reps_count: 8,
-      },
-    ])
-  })
-
-  it("normalizes legacy amount values from localStorage", () => {
-    window.localStorage.setItem(
-      "daily-pushup-counter:challenges",
-      JSON.stringify([
-        {
-          id: "legacy",
-          challenge_type: "pushup",
-          timestamp: "2026-03-10T11:00:00.000Z",
-          amount: 8,
-        },
-      ])
-    )
-
-    expect(getStoredChallenges()).toEqual([
-      {
-        id: "legacy",
-        challenge_type: "pushup",
-        timestamp: "2026-03-10T11:00:00.000Z",
-        reps_count: 8,
-      },
-    ])
+  it("preserves zero-rep records without changing their values", () => {
+    expect(
+      toChallengeRecord({
+        id: "challenge-2",
+        challengeType: "pushup",
+        completedAt: Date.UTC(2026, 2, 10, 12, 30, 0),
+        repsCount: 0,
+      })
+    ).toMatchObject({
+      challenge_type: "pushup",
+      reps_count: 0,
+    })
   })
 })

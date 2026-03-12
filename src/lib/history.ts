@@ -5,6 +5,16 @@ export type DailyRepTotal = {
   totalReps: number
 }
 
+export function getCurrentMonthRange(now = new Date()) {
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
+
+  return {
+    startMs: new Date(currentYear, currentMonth, 1).getTime(),
+    endMs: new Date(currentYear, currentMonth + 1, 1).getTime(),
+  }
+}
+
 export function getCurrentMonthDailyRepTotals(
   challenges: Array<ChallengeRecord>,
   now = new Date()

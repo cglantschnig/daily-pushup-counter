@@ -1,10 +1,13 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
+import { useQuery } from "convex/react"
 import { ChevronLeft } from "lucide-react"
-import { useEffect, useState } from "react"
-import type { ChallengeRecord } from "@/lib/challenges"
+import { useState } from "react"
 import { AppScreen } from "@/components/app-screen"
-import { getStoredChallenges } from "@/lib/challenges"
-import { getCurrentMonthDailyRepTotals } from "@/lib/history"
+import {
+  getCurrentMonthDailyRepTotals,
+  getCurrentMonthRange,
+} from "@/lib/history"
+import { api } from "../../convex/_generated/api"
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
@@ -21,15 +24,13 @@ export const Route = createFileRoute("/history")({
 })
 
 function HistoryScreen() {
-  const [challenges, setChallenges] = useState<Array<ChallengeRecord>>([])
-
-  useEffect(() => {
-    setChallenges(getStoredChallenges())
-  }, [])
-
-  const today = new Date()
-  const dailyTotals = getCurrentMonthDailyRepTotals(challenges, today)
-  const recentChallenges = challenges.slice(0, 20)
+  const [today] = useState(() => new Date())
+  const monthRange = getCurrentMonthRange(today)
+  const recentChallenges =
+    useQuery(api.challenges.listRecent, { limit: 20 }) ?? []
+  const monthChallenges =
+    useQuery(api.challenges.listForMonth, monthRange) ?? []
+  const dailyTotals = getCurrentMonthDailyRepTotals(monthChallenges, today)
   const monthTotal = dailyTotals.reduce(
     (sum, entry) => sum + entry.totalReps,
     0
@@ -49,7 +50,7 @@ function HistoryScreen() {
       }
       showBranding={false}
       title="History"
-      subtitle="Recent pushup sets saved on this device."
+      subtitle="Anonymous pushup history shared across this Convex deployment."
     >
       <div className="flex h-full flex-col gap-4">
         <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
@@ -131,8 +132,7 @@ function HistoryScreen() {
             </div>
           ) : (
             <div className="rounded-[1.5rem] border border-dashed border-primary/20 bg-background/72 px-5 py-8 text-center text-sm leading-6 text-muted-foreground dark:bg-background/32">
-              No challenges saved yet. Complete a pushup challenge to see it
-              here.
+              No challenges saved yet. Complete a pushup challenge to see it here.
             </div>
           )}
         </section>
