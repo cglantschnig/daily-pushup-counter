@@ -1,13 +1,13 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "convex/react"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, LoaderCircle } from "lucide-react"
 import { useState } from "react"
+import { api } from "../../convex/_generated/api"
 import { AppScreen } from "@/components/app-screen"
 import {
   getCurrentMonthDailyRepTotals,
   getCurrentMonthRange,
 } from "@/lib/history"
-import { api } from "../../convex/_generated/api"
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
@@ -26,11 +26,13 @@ export const Route = createFileRoute("/history")({
 function HistoryScreen() {
   const [today] = useState(() => new Date())
   const monthRange = getCurrentMonthRange(today)
-  const recentChallenges =
-    useQuery(api.challenges.listRecent, { limit: 20 }) ?? []
-  const monthChallenges =
-    useQuery(api.challenges.listForMonth, monthRange) ?? []
-  const dailyTotals = getCurrentMonthDailyRepTotals(monthChallenges, today)
+  const recentChallenges = useQuery(api.challenges.listRecent, { limit: 20 })
+  const monthChallenges = useQuery(api.challenges.listForMonth, monthRange)
+  const isRecentChallengesLoading = recentChallenges === undefined
+  const isMonthChallengesLoading = monthChallenges === undefined
+  const recentChallengeEntries = recentChallenges ?? []
+  const monthChallengeEntries = monthChallenges ?? []
+  const dailyTotals = getCurrentMonthDailyRepTotals(monthChallengeEntries, today)
   const monthTotal = dailyTotals.reduce(
     (sum, entry) => sum + entry.totalReps,
     0
@@ -70,32 +72,41 @@ function HistoryScreen() {
                   Month Total
                 </p>
                 <p className="mt-1 text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
-                  {monthTotal}
+                  {isMonthChallengesLoading ? "..." : monthTotal}
                 </p>
               </div>
             </div>
 
-            <MonthlyRepsChart dailyTotals={dailyTotals} />
+            {isMonthChallengesLoading ? (
+              <MonthSummarySkeleton />
+            ) : (
+              <>
+                <MonthlyRepsChart dailyTotals={dailyTotals} />
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-[1.25rem] border border-border/60 bg-background/72 px-4 py-3">
-                <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-                  Active Days
-                </p>
-                <p className="mt-1 text-xl leading-none font-semibold tracking-[-0.04em] text-foreground">
-                  {activeDays}
-                </p>
-              </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-[1.25rem] border border-border/60 bg-background/72 px-4 py-3">
+                    <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                      Active Days
+                    </p>
+                    <p className="mt-1 text-xl leading-none font-semibold tracking-[-0.04em] text-foreground">
+                      {activeDays}
+                    </p>
+                  </div>
 
-              <div className="rounded-[1.25rem] border border-border/60 bg-background/72 px-4 py-3">
-                <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-                  Best Day
-                </p>
-                <p className="mt-1 text-xl leading-none font-semibold tracking-[-0.04em] text-foreground">
-                  {Math.max(...dailyTotals.map((entry) => entry.totalReps), 0)}
-                </p>
-              </div>
-            </div>
+                  <div className="rounded-[1.25rem] border border-border/60 bg-background/72 px-4 py-3">
+                    <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                      Best Day
+                    </p>
+                    <p className="mt-1 text-xl leading-none font-semibold tracking-[-0.04em] text-foreground">
+                      {Math.max(
+                        ...dailyTotals.map((entry) => entry.totalReps),
+                        0
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -111,9 +122,11 @@ function HistoryScreen() {
             </div>
           </div>
 
-          {recentChallenges.length > 0 ? (
+          {isRecentChallengesLoading ? (
+            <RecentWorkoutsSkeleton />
+          ) : recentChallengeEntries.length > 0 ? (
             <div className="space-y-4">
-              {recentChallenges.map((challenge, index) => (
+              {recentChallengeEntries.map((challenge, index) => (
                 <article key={challenge.id}>
                   <div className="flex items-start justify-between gap-4">
                     <p className="text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
@@ -124,7 +137,7 @@ function HistoryScreen() {
                     </p>
                   </div>
 
-                  {index < recentChallenges.length - 1 ? (
+                  {index < recentChallengeEntries.length - 1 ? (
                     <div className="mt-4 h-px bg-primary/10" />
                   ) : null}
                 </article>
@@ -138,6 +151,65 @@ function HistoryScreen() {
         </section>
       </div>
     </AppScreen>
+  )
+}
+
+function MonthSummarySkeleton() {
+  return (
+    <div
+      className="space-y-4"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading monthly workout history"
+    >
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <LoaderCircle className="size-4 animate-spin text-primary" />
+        <span>Loading monthly history</span>
+      </div>
+
+      <div className="overflow-hidden rounded-[1.5rem] border border-border/60 bg-background/72 p-3">
+        <div className="h-48 w-full animate-pulse rounded-[1.2rem] bg-linear-to-br from-primary/14 via-primary/6 to-transparent" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {[0, 1].map((item) => (
+          <div
+            key={item}
+            className="rounded-[1.25rem] border border-border/60 bg-background/72 px-4 py-3"
+          >
+            <div className="h-3 w-20 animate-pulse rounded-full bg-muted" />
+            <div className="mt-3 h-6 w-12 animate-pulse rounded-full bg-primary/14" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function RecentWorkoutsSkeleton() {
+  return (
+    <div
+      className="space-y-4"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading recent workouts"
+    >
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <LoaderCircle className="size-4 animate-spin text-primary" />
+        <span>Loading recent workouts</span>
+      </div>
+
+      {Array.from({ length: 4 }, (_, index) => (
+        <div key={index}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="h-8 w-28 animate-pulse rounded-full bg-primary/14" />
+            <div className="h-4 w-32 animate-pulse rounded-full bg-muted" />
+          </div>
+
+          {index < 3 ? <div className="mt-4 h-px bg-primary/10" /> : null}
+        </div>
+      ))}
+    </div>
   )
 }
 
