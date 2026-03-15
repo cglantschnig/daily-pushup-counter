@@ -234,7 +234,12 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
   const plotWidth = chartWidth - paddingX * 2
   const plotHeight = chartHeight - paddingTop - paddingBottom
   const maxReps = Math.max(...dailyTotals.map((entry) => entry.totalReps), 1)
+  const averageDailyReps =
+    dailyTotals.reduce((sum, entry) => sum + entry.totalReps, 0) /
+    dailyTotals.length
+  const averageLabel = averageDailyReps.toFixed(1)
   const baselineY = paddingTop + plotHeight
+  const averageY = baselineY - (averageDailyReps / maxReps) * plotHeight
   const gap = 4
   const rawBarWidth =
     (plotWidth - gap * (dailyTotals.length - 1)) / dailyTotals.length
@@ -306,6 +311,17 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
             )
           })}
 
+          <line
+            x1={paddingX}
+            y1={averageY}
+            x2={chartWidth - paddingX}
+            y2={averageY}
+            stroke="var(--color-chart-2)"
+            strokeDasharray="6 4"
+            strokeWidth="1.5"
+            opacity="0.95"
+          />
+
           {bars.map((bar) => (
             <rect
               key={bar.date.toISOString()}
@@ -319,6 +335,30 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
               strokeOpacity={bar.totalReps > 0 ? 0.2 : 0.12}
             />
           ))}
+
+          <g transform={`translate(${chartWidth - paddingX - 4}, ${averageY})`}>
+            <rect
+              x={-52}
+              y={-11}
+              width={52}
+              height={18}
+              rx={9}
+              fill="var(--color-background)"
+              fillOpacity="0.92"
+              stroke="var(--color-chart-2)"
+              strokeOpacity="0.35"
+            />
+            <text
+              x={-8}
+              y={2}
+              textAnchor="end"
+              fontSize="10"
+              fontWeight="600"
+              fill="var(--color-chart-2)"
+            >
+              {`Avg ${averageLabel}`}
+            </text>
+          </g>
         </svg>
       </div>
 
