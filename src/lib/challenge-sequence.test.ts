@@ -19,7 +19,7 @@ describe("challenge sequence", () => {
       "5",
       "DONE",
     ])
-    expect(sequence[0]?.delayMs).toBe(1000)
+    expect(sequence[0]?.delayMs).toBe(1500)
     expect(sequence[4]?.delayMs).toBe(2000)
     expect(sequence[8]?.delayMs).toBe(2000)
     expect(sequence[9]).toMatchObject({
