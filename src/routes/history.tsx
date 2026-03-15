@@ -230,26 +230,24 @@ function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
   const plotHeight = chartHeight - paddingTop - paddingBottom
   const maxReps = Math.max(...dailyTotals.map((entry) => entry.totalReps), 1)
   const baselineY = paddingTop + plotHeight
-  const points = dailyTotals.map((entry, index) => {
-    const x =
-      dailyTotals.length === 1
-        ? chartWidth / 2
-        : paddingX + (index / (dailyTotals.length - 1)) * plotWidth
-    const y = baselineY - (entry.totalReps / maxReps) * plotHeight
+  const gap = 4
+  const rawBarWidth = (plotWidth - gap * (dailyTotals.length - 1)) / dailyTotals.length
+  const barWidth = Math.max(Math.min(rawBarWidth, 18), 3)
+  const totalBarsWidth =
+    dailyTotals.length * barWidth + (dailyTotals.length - 1) * gap
+  const startX = paddingX + (plotWidth - totalBarsWidth) / 2
+  const bars = dailyTotals.map((entry, index) => {
+    const height = (entry.totalReps / maxReps) * plotHeight
+    const x = startX + index * (barWidth + gap)
+    const y = baselineY - height
 
     return {
       ...entry,
+      height,
       x,
       y,
     }
   })
-  const linePath = points
-    .map(
-      (point, index) =>
-        `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
-    )
-    .join(" ")
-  const areaPath = `${linePath} L ${points.at(-1)?.x.toFixed(2) ?? chartWidth} ${baselineY.toFixed(2)} L ${points[0]?.x.toFixed(2) ?? 0} ${baselineY.toFixed(2)} Z`
   const guideValues = Array.from(
     new Set([maxReps, Math.round(maxReps / 2), 0])
   ).sort((left, right) => right - left)
@@ -264,19 +262,19 @@ function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="block h-48 w-full"
           role="img"
-          aria-label="Line graph of daily reps totals for the current month"
+          aria-label="Bar chart of daily reps totals for the current month"
         >
           <defs>
-            <linearGradient id="history-month-fill" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="history-month-bar-fill" x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="0%"
                 stopColor="var(--color-chart-1)"
-                stopOpacity="0.28"
+                stopOpacity="0.9"
               />
               <stop
                 offset="100%"
                 stopColor="var(--color-chart-1)"
-                stopOpacity="0"
+                stopOpacity="0.35"
               />
             </linearGradient>
           </defs>
@@ -298,25 +296,17 @@ function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
             )
           })}
 
-          <path d={areaPath} fill="url(#history-month-fill)" />
-          <path
-            d={linePath}
-            fill="none"
-            stroke="var(--color-chart-1)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {points.map((point) => (
-            <circle
-              key={point.day}
-              cx={point.x}
-              cy={point.y}
-              r={point.totalReps > 0 ? 3.5 : 2.5}
-              fill="var(--color-card)"
+          {bars.map((bar) => (
+            <rect
+              key={bar.day}
+              x={bar.x}
+              y={bar.totalReps > 0 ? bar.y : baselineY - 1.5}
+              width={barWidth}
+              height={bar.totalReps > 0 ? bar.height : 1.5}
+              rx={Math.min(barWidth / 2, 6)}
+              fill="url(#history-month-bar-fill)"
               stroke="var(--color-chart-1)"
-              strokeWidth="2"
+              strokeOpacity={bar.totalReps > 0 ? 0.2 : 0.12}
             />
           ))}
         </svg>
