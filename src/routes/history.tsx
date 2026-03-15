@@ -1,10 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "convex/react"
 import { ChevronLeft, LoaderCircle } from "lucide-react"
-import { useState } from "react"
+import { type KeyboardEvent, useState } from "react"
 import { api } from "../../convex/_generated/api"
 import { AppScreen } from "@/components/app-screen"
 import {
+  type DailyRepTotal,
   getRollingWeekDailyRepTotals,
   getRollingWeekRange,
 } from "@/lib/history"
@@ -22,6 +23,12 @@ const weekRangeFormatter = new Intl.DateTimeFormat("en-US", {
 
 const weekdayFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "short",
+})
+
+const chartDetailDateFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
 })
 
 export const Route = createFileRoute("/history")({
@@ -218,18 +225,15 @@ function RecentWorkoutsSkeleton() {
 }
 
 type WeeklyRepsChartProps = {
-  dailyTotals: Array<{
-    date: Date
-    totalReps: number
-    isToday: boolean
-  }>
+  dailyTotals: Array<DailyRepTotal>
 }
 
 function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const chartWidth = 320
-  const chartHeight = 180
+  const chartHeight = 212
   const paddingX = 12
-  const paddingTop = 12
+  const paddingTop = 52
   const paddingBottom = 18
   const plotWidth = chartWidth - paddingX * 2
   const plotHeight = chartHeight - paddingTop - paddingBottom
@@ -247,6 +251,7 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
   const totalBarsWidth =
     dailyTotals.length * barWidth + (dailyTotals.length - 1) * gap
   const startX = paddingX + (plotWidth - totalBarsWidth) / 2
+  const selectedBar = selectedIndex === null ? null : dailyTotals[selectedIndex]
   const bars = dailyTotals.map((entry, index) => {
     const height = (entry.totalReps / maxReps) * plotHeight
     const x = startX + index * (barWidth + gap)
@@ -255,6 +260,7 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
     return {
       ...entry,
       height,
+      index,
       x,
       y,
     }
@@ -263,6 +269,34 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
     new Set([maxReps, Math.round(maxReps / 2), 0])
   ).sort((left, right) => right - left)
   const weekHasWork = dailyTotals.some((entry) => entry.totalReps > 0)
+  const selectedChartBar = selectedIndex === null ? null : bars[selectedIndex]
+  const detailWidth = 126
+  const detailHeight = 32
+  const detailAnchorX = selectedChartBar
+    ? Math.min(
+        Math.max(selectedChartBar.x + barWidth / 2, paddingX + detailWidth / 2),
+        chartWidth - paddingX - detailWidth / 2
+      )
+    : null
+  const detailLineTopY = 38
+  const detailBoxY = 8
+  const detailDateLabel = selectedBar
+    ? chartDetailDateFormatter.format(selectedBar.date)
+    : null
+  const detailSummaryLabel = selectedBar
+    ? `${selectedBar.workoutCount} workout${selectedBar.workoutCount === 1 ? "" : "s"} • ${selectedBar.totalReps} reps`
+    : null
+  const handleBarKeyDown = (
+    event: KeyboardEvent<SVGRectElement>,
+    index: number
+  ) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return
+    }
+
+    event.preventDefault()
+    setSelectedIndex(index)
+  }
 
   return (
     <div className="space-y-3">
@@ -270,8 +304,8 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="block h-48 w-full"
-          role="img"
-          aria-label="Bar chart of daily reps totals for the last seven days"
+          role="group"
+          aria-label="Interactive bar chart of daily reps totals for the last seven days"
         >
           <defs>
             <linearGradient
@@ -322,19 +356,90 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
             opacity="0.95"
           />
 
-          {bars.map((bar) => (
-            <rect
-              key={bar.date.toISOString()}
-              x={bar.x}
-              y={bar.totalReps > 0 ? bar.y : baselineY - 1.5}
-              width={barWidth}
-              height={bar.totalReps > 0 ? bar.height : 1.5}
-              rx={Math.min(barWidth / 2, 6)}
-              fill="url(#history-week-bar-fill)"
-              stroke="var(--color-chart-1)"
-              strokeOpacity={bar.totalReps > 0 ? 0.2 : 0.12}
-            />
-          ))}
+          {detailAnchorX !== null &&
+          selectedChartBar &&
+          detailDateLabel &&
+          detailSummaryLabel ? (
+            <g aria-hidden="true">
+              <path
+                d={`M ${detailAnchorX} ${detailLineTopY} L ${selectedChartBar.x + barWidth / 2} ${Math.max(selectedChartBar.y - 6, paddingTop + 4)}`}
+                stroke="var(--color-chart-1)"
+                strokeOpacity="0.5"
+                strokeWidth="1.5"
+                strokeDasharray="3 4"
+              />
+              <rect
+                x={detailAnchorX - detailWidth / 2}
+                y={detailBoxY}
+                width={detailWidth}
+                height={detailHeight}
+                rx={12}
+                fill="var(--color-background)"
+                fillOpacity="0.95"
+                stroke="var(--color-chart-1)"
+                strokeOpacity="0.25"
+              />
+              <text
+                x={detailAnchorX}
+                y={detailBoxY + 12}
+                textAnchor="middle"
+                fontSize="9"
+                fontWeight="600"
+                fill="var(--color-muted-foreground)"
+              >
+                {detailDateLabel}
+              </text>
+              <text
+                x={detailAnchorX}
+                y={detailBoxY + 24}
+                textAnchor="middle"
+                fontSize="10"
+                fontWeight="700"
+                fill="var(--color-foreground)"
+              >
+                {detailSummaryLabel}
+              </text>
+            </g>
+          ) : null}
+
+          {bars.map((bar) => {
+            const isSelected = bar.index === selectedIndex
+
+            return (
+              <g key={bar.date.toISOString()}>
+                <rect
+                  x={Math.max(bar.x - 4, paddingX)}
+                  y={paddingTop}
+                  width={barWidth + 8}
+                  height={plotHeight}
+                  rx={Math.min((barWidth + 8) / 2, 8)}
+                  fill="transparent"
+                  className="cursor-pointer"
+                  tabIndex={0}
+                  focusable="true"
+                  role="button"
+                  aria-label={`${chartDetailDateFormatter.format(bar.date)}, ${bar.workoutCount} workout${bar.workoutCount === 1 ? "" : "s"}, ${bar.totalReps} reps`}
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedIndex(bar.index)}
+                  onKeyDown={(event) => handleBarKeyDown(event, bar.index)}
+                />
+                <rect
+                  x={bar.x}
+                  y={bar.totalReps > 0 ? bar.y : baselineY - 1.5}
+                  width={barWidth}
+                  height={bar.totalReps > 0 ? bar.height : 1.5}
+                  rx={Math.min(barWidth / 2, 6)}
+                  fill="url(#history-week-bar-fill)"
+                  stroke="var(--color-chart-1)"
+                  strokeOpacity={
+                    isSelected ? 0.8 : bar.totalReps > 0 ? 0.2 : 0.12
+                  }
+                  strokeWidth={isSelected ? 2 : 1}
+                  opacity={selectedIndex === null || isSelected ? 1 : 0.7}
+                />
+              </g>
+            )
+          })}
 
           <g transform={`translate(${chartWidth - paddingX - 4}, ${averageY})`}>
             <rect
@@ -360,15 +465,25 @@ function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
             </text>
           </g>
         </svg>
+
+        <div
+          className="mt-3 min-h-6 text-center text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase"
+          aria-live="polite"
+        >
+          {selectedBar
+            ? `${detailDateLabel}: ${detailSummaryLabel}`
+            : "Tap a bar to inspect that day"}
+        </div>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center">
-        {dailyTotals.map((entry) => (
+        {dailyTotals.map((entry, index) => (
           <div
             key={entry.date.toISOString()}
             className={cn(
               "rounded-xl px-1 py-2 text-[0.65rem] font-medium text-muted-foreground",
-              entry.isToday && "bg-primary/10 text-primary"
+              entry.isToday && "bg-primary/10 text-primary",
+              selectedIndex === index && "bg-primary/16 text-primary"
             )}
           >
             <span className="block tracking-[0.12em] uppercase">

@@ -3,6 +3,7 @@ import type { ChallengeRecord } from "@/lib/challenges"
 export type DailyRepTotal = {
   date: Date
   totalReps: number
+  workoutCount: number
   isToday: boolean
 }
 
@@ -34,6 +35,7 @@ export function getRollingWeekDailyRepTotals(
     return {
       date,
       totalReps: 0,
+      workoutCount: 0,
       isToday: index === 6,
     }
   })
@@ -50,6 +52,7 @@ export function getRollingWeekDailyRepTotals(
     }
 
     entry.totalReps += challenge.reps_count
+    entry.workoutCount += 1
   })
 
   return totals

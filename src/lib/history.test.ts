@@ -43,16 +43,19 @@ describe("history helpers", () => {
     expect(totals[0]).toMatchObject({
       date: new Date(2026, 2, 14),
       totalReps: 0,
+      workoutCount: 0,
       isToday: false,
     })
     expect(totals[2]).toMatchObject({
       date: new Date(2026, 2, 16),
       totalReps: 20,
+      workoutCount: 2,
       isToday: false,
     })
     expect(totals[6]).toMatchObject({
       date: new Date(2026, 2, 20),
       totalReps: 10,
+      workoutCount: 1,
       isToday: true,
     })
   })
@@ -71,8 +74,10 @@ describe("history helpers", () => {
     expect(totals[6]).toMatchObject({
       date: new Date(2026, 2, 20),
       totalReps: 9,
+      workoutCount: 1,
       isToday: true,
     })
     expect(totals.reduce((sum, entry) => sum + entry.totalReps, 0)).toBe(9)
+    expect(totals.reduce((sum, entry) => sum + entry.workoutCount, 0)).toBe(1)
   })
 })
