@@ -54,7 +54,7 @@ export const listRecent = query({
   },
 })
 
-export const listForMonth = query({
+export const listForRange = query({
   args: {
     startMs: v.number(),
     endMs: v.number(),

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import type { ChallengeRecord } from "@/lib/challenges"
 import {
-  getCurrentMonthDailyRepTotals,
-  getCurrentMonthRange,
+  getRollingWeekDailyRepTotals,
+  getRollingWeekRange,
 } from "@/lib/history"
 
 function createChallenge(
@@ -19,44 +19,60 @@ function createChallenge(
 }
 
 describe("history helpers", () => {
-  it("returns the current month start and end timestamps in local time", () => {
+  it("returns a 7-day rolling range ending tomorrow in local time", () => {
     const now = new Date(2026, 2, 20, 9, 0, 0)
 
-    expect(getCurrentMonthRange(now)).toEqual({
-      startMs: new Date(2026, 2, 1).getTime(),
-      endMs: new Date(2026, 3, 1).getTime(),
+    expect(getRollingWeekRange(now)).toEqual({
+      startMs: new Date(2026, 2, 14).getTime(),
+      endMs: new Date(2026, 2, 21).getTime(),
     })
   })
 
-  it("sums reps for each day in the current month", () => {
-    const now = new Date(2026, 2, 11, 9, 0, 0)
-    const totals = getCurrentMonthDailyRepTotals(
+  it("sums reps for each day in the rolling week", () => {
+    const now = new Date(2026, 2, 20, 9, 0, 0)
+    const totals = getRollingWeekDailyRepTotals(
       [
-        createChallenge("first", new Date(2026, 2, 4, 8, 0, 0), 8),
-        createChallenge("second", new Date(2026, 2, 4, 18, 0, 0), 12),
-        createChallenge("third", new Date(2026, 2, 11, 7, 0, 0), 10),
+        createChallenge("first", new Date(2026, 2, 16, 8, 0, 0), 8),
+        createChallenge("second", new Date(2026, 2, 16, 18, 0, 0), 12),
+        createChallenge("third", new Date(2026, 2, 20, 7, 0, 0), 10),
       ],
       now
     )
 
-    expect(totals).toHaveLength(31)
-    expect(totals[0]).toEqual({ day: 1, totalReps: 0 })
-    expect(totals[3]).toEqual({ day: 4, totalReps: 20 })
-    expect(totals[10]).toEqual({ day: 11, totalReps: 10 })
+    expect(totals).toHaveLength(7)
+    expect(totals[0]).toMatchObject({
+      date: new Date(2026, 2, 14),
+      totalReps: 0,
+      isToday: false,
+    })
+    expect(totals[2]).toMatchObject({
+      date: new Date(2026, 2, 16),
+      totalReps: 20,
+      isToday: false,
+    })
+    expect(totals[6]).toMatchObject({
+      date: new Date(2026, 2, 20),
+      totalReps: 10,
+      isToday: true,
+    })
   })
 
-  it("ignores workouts outside the current month", () => {
+  it("ignores workouts outside the rolling week", () => {
     const now = new Date(2026, 2, 20, 9, 0, 0)
-    const totals = getCurrentMonthDailyRepTotals(
+    const totals = getRollingWeekDailyRepTotals(
       [
-        createChallenge("previous-month", new Date(2026, 1, 28, 10, 0, 0), 14),
-        createChallenge("current-month", new Date(2026, 2, 31, 12, 0, 0), 9),
-        createChallenge("next-month", new Date(2026, 3, 1, 12, 0, 0), 16),
+        createChallenge("before-range", new Date(2026, 2, 13, 10, 0, 0), 14),
+        createChallenge("inside-range", new Date(2026, 2, 20, 12, 0, 0), 9),
+        createChallenge("after-range", new Date(2026, 2, 21, 12, 0, 0), 16),
       ],
       now
     )
 
-    expect(totals[30]).toEqual({ day: 31, totalReps: 9 })
+    expect(totals[6]).toMatchObject({
+      date: new Date(2026, 2, 20),
+      totalReps: 9,
+      isToday: true,
+    })
     expect(totals.reduce((sum, entry) => sum + entry.totalReps, 0)).toBe(9)
   })
 })

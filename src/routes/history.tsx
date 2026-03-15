@@ -5,18 +5,23 @@ import { useState } from "react"
 import { api } from "../../convex/_generated/api"
 import { AppScreen } from "@/components/app-screen"
 import {
-  getCurrentMonthDailyRepTotals,
-  getCurrentMonthRange,
+  getRollingWeekDailyRepTotals,
+  getRollingWeekRange,
 } from "@/lib/history"
+import { cn } from "@/lib/utils"
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
   timeStyle: "short",
 })
 
-const monthFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  year: "numeric",
+const weekRangeFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+})
+
+const weekdayFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
 })
 
 export const Route = createFileRoute("/history")({
@@ -25,19 +30,17 @@ export const Route = createFileRoute("/history")({
 
 function HistoryScreen() {
   const [today] = useState(() => new Date())
-  const monthRange = getCurrentMonthRange(today)
+  const weekRange = getRollingWeekRange(today)
   const recentChallenges = useQuery(api.challenges.listRecent, { limit: 20 })
-  const monthChallenges = useQuery(api.challenges.listForMonth, monthRange)
+  const weekChallenges = useQuery(api.challenges.listForRange, weekRange)
   const isRecentChallengesLoading = recentChallenges === undefined
-  const isMonthChallengesLoading = monthChallenges === undefined
+  const isWeekChallengesLoading = weekChallenges === undefined
   const recentChallengeEntries = recentChallenges ?? []
-  const monthChallengeEntries = monthChallenges ?? []
-  const dailyTotals = getCurrentMonthDailyRepTotals(monthChallengeEntries, today)
-  const monthTotal = dailyTotals.reduce(
-    (sum, entry) => sum + entry.totalReps,
-    0
-  )
+  const weekChallengeEntries = weekChallenges ?? []
+  const dailyTotals = getRollingWeekDailyRepTotals(weekChallengeEntries, today)
+  const weekTotal = dailyTotals.reduce((sum, entry) => sum + entry.totalReps, 0)
   const activeDays = dailyTotals.filter((entry) => entry.totalReps > 0).length
+  const weekRangeLabel = `${weekRangeFormatter.format(dailyTotals[0]?.date ?? today)} - ${weekRangeFormatter.format(today)}`
 
   return (
     <AppScreen
@@ -60,28 +63,28 @@ function HistoryScreen() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  {monthFormatter.format(today)}
+                  {weekRangeLabel}
                 </p>
                 <h2 className="mt-1 text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
-                  Daily reps
+                  Weekly reps
                 </h2>
               </div>
 
               <div className="rounded-[1.25rem] border border-primary/12 bg-primary/8 px-4 py-3 text-right">
                 <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-primary uppercase">
-                  Month Total
+                  Week Total
                 </p>
                 <p className="mt-1 text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
-                  {isMonthChallengesLoading ? "..." : monthTotal}
+                  {isWeekChallengesLoading ? "..." : weekTotal}
                 </p>
               </div>
             </div>
 
-            {isMonthChallengesLoading ? (
-              <MonthSummarySkeleton />
+            {isWeekChallengesLoading ? (
+              <WeekSummarySkeleton />
             ) : (
               <>
-                <MonthlyRepsChart dailyTotals={dailyTotals} />
+                <WeeklyRepsChart dailyTotals={dailyTotals} />
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-[1.25rem] border border-border/60 bg-background/72 px-4 py-3">
@@ -145,7 +148,8 @@ function HistoryScreen() {
             </div>
           ) : (
             <div className="rounded-[1.5rem] border border-dashed border-primary/20 bg-background/72 px-5 py-8 text-center text-sm leading-6 text-muted-foreground dark:bg-background/32">
-              No challenges saved yet. Complete a pushup challenge to see it here.
+              No challenges saved yet. Complete a pushup challenge to see it
+              here.
             </div>
           )}
         </section>
@@ -154,17 +158,17 @@ function HistoryScreen() {
   )
 }
 
-function MonthSummarySkeleton() {
+function WeekSummarySkeleton() {
   return (
     <div
       className="space-y-4"
       role="status"
       aria-live="polite"
-      aria-label="Loading monthly workout history"
+      aria-label="Loading weekly workout history"
     >
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <LoaderCircle className="size-4 animate-spin text-primary" />
-        <span>Loading monthly history</span>
+        <span>Loading weekly history</span>
       </div>
 
       <div className="overflow-hidden rounded-[1.5rem] border border-border/60 bg-background/72 p-3">
@@ -213,14 +217,15 @@ function RecentWorkoutsSkeleton() {
   )
 }
 
-type MonthlyRepsChartProps = {
+type WeeklyRepsChartProps = {
   dailyTotals: Array<{
-    day: number
+    date: Date
     totalReps: number
+    isToday: boolean
   }>
 }
 
-function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
+function WeeklyRepsChart({ dailyTotals }: WeeklyRepsChartProps) {
   const chartWidth = 320
   const chartHeight = 180
   const paddingX = 12
@@ -231,7 +236,8 @@ function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
   const maxReps = Math.max(...dailyTotals.map((entry) => entry.totalReps), 1)
   const baselineY = paddingTop + plotHeight
   const gap = 4
-  const rawBarWidth = (plotWidth - gap * (dailyTotals.length - 1)) / dailyTotals.length
+  const rawBarWidth =
+    (plotWidth - gap * (dailyTotals.length - 1)) / dailyTotals.length
   const barWidth = Math.max(Math.min(rawBarWidth, 18), 3)
   const totalBarsWidth =
     dailyTotals.length * barWidth + (dailyTotals.length - 1) * gap
@@ -251,9 +257,7 @@ function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
   const guideValues = Array.from(
     new Set([maxReps, Math.round(maxReps / 2), 0])
   ).sort((left, right) => right - left)
-  const middleDay =
-    dailyTotals[Math.floor((dailyTotals.length - 1) / 2)]?.day ?? 1
-  const monthHasWork = dailyTotals.some((entry) => entry.totalReps > 0)
+  const weekHasWork = dailyTotals.some((entry) => entry.totalReps > 0)
 
   return (
     <div className="space-y-3">
@@ -262,10 +266,16 @@ function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="block h-48 w-full"
           role="img"
-          aria-label="Bar chart of daily reps totals for the current month"
+          aria-label="Bar chart of daily reps totals for the last seven days"
         >
           <defs>
-            <linearGradient id="history-month-bar-fill" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient
+              id="history-week-bar-fill"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
               <stop
                 offset="0%"
                 stopColor="var(--color-chart-1)"
@@ -298,13 +308,13 @@ function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
 
           {bars.map((bar) => (
             <rect
-              key={bar.day}
+              key={bar.date.toISOString()}
               x={bar.x}
               y={bar.totalReps > 0 ? bar.y : baselineY - 1.5}
               width={barWidth}
               height={bar.totalReps > 0 ? bar.height : 1.5}
               rx={Math.min(barWidth / 2, 6)}
-              fill="url(#history-month-bar-fill)"
+              fill="url(#history-week-bar-fill)"
               stroke="var(--color-chart-1)"
               strokeOpacity={bar.totalReps > 0 ? 0.2 : 0.12}
             />
@@ -312,15 +322,29 @@ function MonthlyRepsChart({ dailyTotals }: MonthlyRepsChartProps) {
         </svg>
       </div>
 
-      <div className="flex items-center justify-between text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
-        <span>Day 1</span>
-        <span>Day {middleDay}</span>
-        <span>Day {dailyTotals.length}</span>
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {dailyTotals.map((entry) => (
+          <div
+            key={entry.date.toISOString()}
+            className={cn(
+              "rounded-xl px-1 py-2 text-[0.65rem] font-medium text-muted-foreground",
+              entry.isToday && "bg-primary/10 text-primary"
+            )}
+          >
+            <span className="block tracking-[0.12em] uppercase">
+              {weekdayFormatter.format(entry.date)}
+            </span>
+            <span className="mt-1 block text-[0.75rem] tracking-normal text-foreground">
+              {entry.date.getDate()}
+            </span>
+          </div>
+        ))}
       </div>
 
-      {!monthHasWork ? (
+      {!weekHasWork ? (
         <p className="text-sm leading-6 text-muted-foreground">
-          No reps logged this month yet. Finish a challenge to start the graph.
+          No reps logged in the last 7 days yet. Finish a challenge to start the
+          graph.
         </p>
       ) : null}
     </div>

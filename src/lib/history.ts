@@ -1,43 +1,53 @@
 import type { ChallengeRecord } from "@/lib/challenges"
 
 export type DailyRepTotal = {
-  day: number
+  date: Date
   totalReps: number
+  isToday: boolean
 }
 
-export function getCurrentMonthRange(now = new Date()) {
+function getDateKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
+export function getRollingWeekRange(now = new Date()) {
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
+  const currentDay = now.getDate()
 
   return {
-    startMs: new Date(currentYear, currentMonth, 1).getTime(),
-    endMs: new Date(currentYear, currentMonth + 1, 1).getTime(),
+    startMs: new Date(currentYear, currentMonth, currentDay - 6).getTime(),
+    endMs: new Date(currentYear, currentMonth, currentDay + 1).getTime(),
   }
 }
 
-export function getCurrentMonthDailyRepTotals(
+export function getRollingWeekDailyRepTotals(
   challenges: Array<ChallengeRecord>,
   now = new Date()
 ): Array<DailyRepTotal> {
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
-  const totals = Array.from({ length: daysInMonth }, (_, index) => ({
-    day: index + 1,
-    totalReps: 0,
-  }))
+  const currentDay = now.getDate()
+  const totals = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(currentYear, currentMonth, currentDay - 6 + index)
+
+    return {
+      date,
+      totalReps: 0,
+      isToday: index === 6,
+    }
+  })
+  const totalsByDateKey = new Map(
+    totals.map((entry) => [getDateKey(entry.date), entry])
+  )
 
   challenges.forEach((challenge) => {
     const challengeDate = new Date(challenge.timestamp)
+    const entry = totalsByDateKey.get(getDateKey(challengeDate))
 
-    if (
-      challengeDate.getFullYear() !== currentYear ||
-      challengeDate.getMonth() !== currentMonth
-    ) {
+    if (!entry) {
       return
     }
-
-    const entry = totals[challengeDate.getDate() - 1]
 
     entry.totalReps += challenge.reps_count
   })

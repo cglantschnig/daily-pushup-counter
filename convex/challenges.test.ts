@@ -47,7 +47,7 @@ describe("convex challenges", () => {
     })
   })
 
-  it("lists only challenges inside the requested month range", async () => {
+  it("lists only challenges inside the requested date range", async () => {
     const t = convexTest(schema, convexModules)
 
     await t.mutation(api.challenges.create, {
@@ -66,7 +66,7 @@ describe("convex challenges", () => {
       repsCount: 12,
     })
 
-    const challenges = await t.query(api.challenges.listForMonth, {
+    const challenges = await t.query(api.challenges.listForRange, {
       startMs: Date.UTC(2026, 2, 1, 0, 0, 0),
       endMs: Date.UTC(2026, 3, 1, 0, 0, 0),
     })
