@@ -13,9 +13,20 @@ import {
 } from "@/lib/history"
 import { cn } from "@/lib/utils"
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
+const fullDateFormatter = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
   timeStyle: "short",
+})
+
+const recentWorkoutTimeFormatter = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+})
+
+const recentWorkoutDateFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
 })
 
 const weekRangeFormatter = new Intl.DateTimeFormat("en-US", {
@@ -33,6 +44,20 @@ const chartDetailDateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 })
 const deleteActionWidth = 84
+
+function isSameLocalDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  )
+}
+
+function formatRecentWorkoutDate(date: Date, today: Date) {
+  return isSameLocalDay(date, today)
+    ? recentWorkoutTimeFormatter.format(date)
+    : recentWorkoutDateFormatter.format(date)
+}
 
 export const Route = createFileRoute("/history")({
   component: HistoryScreen,
@@ -179,6 +204,7 @@ function HistoryScreen() {
                   isDeleteDisabled={deletingChallengeId !== null}
                   showDivider={index < recentChallengeEntries.length - 1}
                   onDelete={handleDeleteChallenge}
+                  today={today}
                 />
               ))}
             </div>
@@ -200,6 +226,7 @@ type RecentWorkoutRowProps = {
   isDeleteDisabled: boolean
   showDivider: boolean
   onDelete: (challenge: ChallengeRecord) => Promise<void>
+  today: Date
 }
 
 function RecentWorkoutRow({
@@ -208,9 +235,12 @@ function RecentWorkoutRow({
   isDeleteDisabled,
   showDivider,
   onDelete,
+  today,
 }: RecentWorkoutRowProps) {
   const swipeContainerRef = useRef<HTMLDivElement | null>(null)
-  const challengeDateLabel = dateFormatter.format(new Date(challenge.timestamp))
+  const challengeDate = new Date(challenge.timestamp)
+  const challengeDateLabel = fullDateFormatter.format(challengeDate)
+  const challengeCompactDateLabel = formatRecentWorkoutDate(challengeDate, today)
 
   function revealDeleteAction() {
     swipeContainerRef.current?.scrollTo({
@@ -250,8 +280,8 @@ function RecentWorkoutRow({
                       reps
                     </span>
                   </p>
-                  <p className="ml-auto text-right text-xs leading-4 text-muted-foreground">
-                    {challengeDateLabel}
+                  <p className="ml-auto whitespace-nowrap text-right text-xs leading-4 text-muted-foreground">
+                    {challengeCompactDateLabel}
                   </p>
                 </div>
               </div>
