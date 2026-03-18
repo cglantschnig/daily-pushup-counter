@@ -49,7 +49,7 @@ const chartDetailDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
 })
-const deleteActionWidth = 76
+const deleteActionWidth = 92
 
 function isSameLocalDay(left: Date, right: Date) {
   return (
@@ -376,18 +376,19 @@ function RecentWorkoutRow({
             style={{ width: `calc(100% + ${deleteActionWidth}px)` }}
           >
             <div
-              className="w-full min-w-0 shrink-0 snap-start rounded-[1rem] bg-background/54 px-0.5 py-0.5 select-none"
+              className="min-w-0 shrink-0 snap-start rounded-[1rem] bg-background/54 px-0.5 py-0.5 select-none"
+              style={{ width: `calc(100% - ${deleteActionWidth}px)` }}
               onClick={handleContentClick}
             >
               <div className="rounded-[0.85rem] border border-border/45 bg-background/70 px-3 py-2">
-                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+                <div className="grid grid-cols-[auto_auto] items-center justify-between gap-2">
                   <p className="text-lg leading-none font-semibold tracking-[-0.05em] text-foreground">
                     {challenge.reps_count}
                     <span className="ml-1 text-xs font-medium tracking-normal text-muted-foreground">
                       reps
                     </span>
                   </p>
-                  <p className="min-w-[4.75rem] justify-self-end whitespace-nowrap rounded-full bg-muted/70 px-2 py-1 text-right text-[0.7rem] leading-none font-medium text-muted-foreground">
+                  <p className="whitespace-nowrap rounded-full bg-muted/70 px-2 py-1 text-right text-[0.7rem] leading-none font-medium text-muted-foreground">
                     {challengeCompactDateLabel}
                   </p>
                 </div>
