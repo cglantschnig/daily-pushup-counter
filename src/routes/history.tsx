@@ -242,7 +242,7 @@ function RecentWorkoutRow({
               className="w-full min-w-0 shrink-0 snap-start rounded-[1.35rem] bg-background/54 px-1 py-1"
               onClick={hideDeleteAction}
             >
-              <div className="flex items-start justify-between gap-4 rounded-[1.1rem] px-3 py-3">
+              <div className="rounded-[1.1rem] px-3 py-3">
                 <div>
                   <p className="text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
                     {challenge.reps_count} reps
@@ -251,10 +251,6 @@ function RecentWorkoutRow({
                     {challengeDateLabel}
                   </p>
                 </div>
-
-                <p className="pt-1 text-[0.65rem] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-                  Swipe left
-                </p>
               </div>
             </div>
 
