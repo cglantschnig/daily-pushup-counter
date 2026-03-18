@@ -32,7 +32,7 @@ const chartDetailDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
 })
-const deleteActionWidth = 92
+const deleteActionWidth = 84
 
 export const Route = createFileRoute("/history")({
   component: HistoryScreen,
@@ -149,13 +149,13 @@ function HistoryScreen() {
           </div>
         </section>
 
-        <section className="flex-1 rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
-          <div className="mb-4 flex items-center justify-between gap-3">
+        <section className="flex-1 rounded-[1.75rem] border border-border/70 bg-card/72 p-4 shadow-sm shadow-primary/5 dark:shadow-black/20">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
+              <h2 className="text-xl leading-none font-semibold tracking-[-0.05em] text-foreground">
                 Recent workouts
               </h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 Latest 20 completed sets.
               </p>
             </div>
@@ -170,7 +170,7 @@ function HistoryScreen() {
           {isRecentChallengesLoading ? (
             <RecentWorkoutsSkeleton />
           ) : recentChallengeEntries.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               {recentChallengeEntries.map((challenge, index) => (
                 <RecentWorkoutRow
                   key={challenge.id}
@@ -228,7 +228,7 @@ function RecentWorkoutRow({
 
   return (
     <article>
-      <div className="overflow-hidden rounded-[1.35rem]">
+      <div className="overflow-hidden rounded-[1.15rem]">
         <div
           ref={swipeContainerRef}
           className="swipe-reveal snap-x snap-mandatory overflow-x-auto scroll-smooth"
@@ -239,15 +239,18 @@ function RecentWorkoutRow({
             style={{ width: `calc(100% + ${deleteActionWidth}px)` }}
           >
             <div
-              className="w-full min-w-0 shrink-0 snap-start rounded-[1.35rem] bg-background/54 px-1 py-1"
+              className="w-full min-w-0 shrink-0 snap-start rounded-[1.15rem] bg-background/54 px-0.5 py-0.5"
               onClick={hideDeleteAction}
             >
-              <div className="rounded-[1.1rem] px-3 py-3">
-                <div>
-                  <p className="text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
-                    {challenge.reps_count} reps
+              <div className="rounded-[0.95rem] border border-border/45 bg-background/70 px-3 py-2.5">
+                <div className="flex items-center gap-3">
+                  <p className="shrink-0 text-xl leading-none font-semibold tracking-[-0.05em] text-foreground">
+                    {challenge.reps_count}
+                    <span className="ml-1 text-sm font-medium tracking-normal text-muted-foreground">
+                      reps
+                    </span>
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  <p className="ml-auto text-right text-xs leading-4 text-muted-foreground">
                     {challengeDateLabel}
                   </p>
                 </div>
@@ -261,8 +264,8 @@ function RecentWorkoutRow({
               <Button
                 type="button"
                 variant="destructive"
-                size="lg"
-                className="h-full w-full rounded-[1.25rem]"
+                size="default"
+                className="h-full w-full rounded-[1rem]"
                 disabled={isDeleteDisabled}
                 aria-label={`Delete ${challenge.reps_count} rep workout from ${challengeDateLabel}`}
                 onFocus={revealDeleteAction}
@@ -280,7 +283,7 @@ function RecentWorkoutRow({
         </div>
       </div>
 
-      {showDivider ? <div className="mt-4 h-px bg-primary/10" /> : null}
+      {showDivider ? <div className="mt-2.5 h-px bg-primary/10" /> : null}
     </article>
   )
 }
@@ -320,7 +323,7 @@ function WeekSummarySkeleton() {
 function RecentWorkoutsSkeleton() {
   return (
     <div
-      className="space-y-4"
+      className="space-y-2.5"
       role="status"
       aria-live="polite"
       aria-label="Loading recent workouts"
@@ -332,12 +335,12 @@ function RecentWorkoutsSkeleton() {
 
       {Array.from({ length: 4 }, (_, index) => (
         <div key={index}>
-          <div className="flex items-start justify-between gap-4">
-            <div className="h-8 w-28 animate-pulse rounded-full bg-primary/14" />
-            <div className="h-4 w-32 animate-pulse rounded-full bg-muted" />
+          <div className="flex items-center justify-between gap-4 rounded-[0.95rem] border border-border/45 bg-background/70 px-3 py-2.5">
+            <div className="h-6 w-20 animate-pulse rounded-full bg-primary/14" />
+            <div className="h-3.5 w-28 animate-pulse rounded-full bg-muted" />
           </div>
 
-          {index < 3 ? <div className="mt-4 h-px bg-primary/10" /> : null}
+          {index < 3 ? <div className="mt-2.5 h-px bg-primary/10" /> : null}
         </div>
       ))}
     </div>
