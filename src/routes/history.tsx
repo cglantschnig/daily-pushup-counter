@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { ChevronLeft, LoaderCircle, Trash2 } from "lucide-react"
-import { type KeyboardEvent, useState } from "react"
+import { type KeyboardEvent, useRef, useState } from "react"
 import { api } from "../../convex/_generated/api"
 import { AppScreen } from "@/components/app-screen"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,7 @@ const chartDetailDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
 })
+const deleteActionWidth = 92
 
 export const Route = createFileRoute("/history")({
   component: HistoryScreen,
@@ -57,15 +58,6 @@ function HistoryScreen() {
   const weekRangeLabel = `${weekRangeFormatter.format(dailyTotals[0]?.date ?? today)} - ${weekRangeFormatter.format(today)}`
 
   async function handleDeleteChallenge(challenge: ChallengeRecord) {
-    const challengeDate = dateFormatter.format(new Date(challenge.timestamp))
-    const confirmed = window.confirm(
-      `Delete the ${challenge.reps_count}-rep workout from ${challengeDate}?`
-    )
-
-    if (!confirmed) {
-      return
-    }
-
     setDeletingChallengeId(challenge.id)
     setDeleteError(null)
 
@@ -180,40 +172,14 @@ function HistoryScreen() {
           ) : recentChallengeEntries.length > 0 ? (
             <div className="space-y-4">
               {recentChallengeEntries.map((challenge, index) => (
-                <article key={challenge.id}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
-                        {challenge.reps_count} reps
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        {dateFormatter.format(new Date(challenge.timestamp))}
-                      </p>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      disabled={deletingChallengeId !== null}
-                      aria-label={`Delete ${challenge.reps_count} rep workout from ${dateFormatter.format(new Date(challenge.timestamp))}`}
-                      onClick={() => void handleDeleteChallenge(challenge)}
-                    >
-                      {deletingChallengeId === challenge.id ? (
-                        <LoaderCircle className="animate-spin" />
-                      ) : (
-                        <Trash2 />
-                      )}
-                      {deletingChallengeId === challenge.id
-                        ? "Deleting..."
-                        : "Delete"}
-                    </Button>
-                  </div>
-
-                  {index < recentChallengeEntries.length - 1 ? (
-                    <div className="mt-4 h-px bg-primary/10" />
-                  ) : null}
-                </article>
+                <RecentWorkoutRow
+                  key={challenge.id}
+                  challenge={challenge}
+                  isDeleting={deletingChallengeId === challenge.id}
+                  isDeleteDisabled={deletingChallengeId !== null}
+                  showDivider={index < recentChallengeEntries.length - 1}
+                  onDelete={handleDeleteChallenge}
+                />
               ))}
             </div>
           ) : (
@@ -225,6 +191,101 @@ function HistoryScreen() {
         </section>
       </div>
     </AppScreen>
+  )
+}
+
+type RecentWorkoutRowProps = {
+  challenge: ChallengeRecord
+  isDeleting: boolean
+  isDeleteDisabled: boolean
+  showDivider: boolean
+  onDelete: (challenge: ChallengeRecord) => Promise<void>
+}
+
+function RecentWorkoutRow({
+  challenge,
+  isDeleting,
+  isDeleteDisabled,
+  showDivider,
+  onDelete,
+}: RecentWorkoutRowProps) {
+  const swipeContainerRef = useRef<HTMLDivElement | null>(null)
+  const challengeDateLabel = dateFormatter.format(new Date(challenge.timestamp))
+
+  function revealDeleteAction() {
+    swipeContainerRef.current?.scrollTo({
+      left: deleteActionWidth,
+      behavior: "smooth",
+    })
+  }
+
+  function hideDeleteAction() {
+    swipeContainerRef.current?.scrollTo({
+      left: 0,
+      behavior: "smooth",
+    })
+  }
+
+  return (
+    <article>
+      <div className="overflow-hidden rounded-[1.35rem]">
+        <div
+          ref={swipeContainerRef}
+          className="swipe-reveal snap-x snap-mandatory overflow-x-auto scroll-smooth"
+          style={{ overscrollBehaviorX: "contain" }}
+        >
+          <div
+            className="flex items-stretch"
+            style={{ width: `calc(100% + ${deleteActionWidth}px)` }}
+          >
+            <div
+              className="w-full min-w-0 shrink-0 snap-start rounded-[1.35rem] bg-background/54 px-1 py-1"
+              onClick={hideDeleteAction}
+            >
+              <div className="flex items-start justify-between gap-4 rounded-[1.1rem] px-3 py-3">
+                <div>
+                  <p className="text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
+                    {challenge.reps_count} reps
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {challengeDateLabel}
+                  </p>
+                </div>
+
+                <p className="pt-1 text-[0.65rem] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                  Swipe left
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="shrink-0 snap-end pl-2"
+              style={{ width: deleteActionWidth }}
+            >
+              <Button
+                type="button"
+                variant="destructive"
+                size="lg"
+                className="h-full w-full rounded-[1.25rem]"
+                disabled={isDeleteDisabled}
+                aria-label={`Delete ${challenge.reps_count} rep workout from ${challengeDateLabel}`}
+                onFocus={revealDeleteAction}
+                onClick={() => void onDelete(challenge)}
+              >
+                {isDeleting ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <Trash2 />
+                )}
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showDivider ? <div className="mt-4 h-px bg-primary/10" /> : null}
+    </article>
   )
 }
 
