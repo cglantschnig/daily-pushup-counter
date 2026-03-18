@@ -1,7 +1,13 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { ChevronLeft, LoaderCircle, Trash2 } from "lucide-react"
-import { type KeyboardEvent, useRef, useState } from "react"
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
+  useRef,
+  useState,
+} from "react"
 import { api } from "../../convex/_generated/api"
 import { AppScreen } from "@/components/app-screen"
 import { Button } from "@/components/ui/button"
@@ -238,6 +244,13 @@ function RecentWorkoutRow({
   today,
 }: RecentWorkoutRowProps) {
   const swipeContainerRef = useRef<HTMLDivElement | null>(null)
+  const pointerDragRef = useRef<{
+    pointerId: number
+    startX: number
+    startScrollLeft: number
+    hasMoved: boolean
+  } | null>(null)
+  const suppressClickUntilRef = useRef(0)
   const challengeDate = new Date(challenge.timestamp)
   const challengeDateLabel = fullDateFormatter.format(challengeDate)
   const challengeCompactDateLabel = formatRecentWorkoutDate(challengeDate, today)
@@ -256,21 +269,115 @@ function RecentWorkoutRow({
     })
   }
 
+  function snapSwipePosition() {
+    const container = swipeContainerRef.current
+
+    if (!container) {
+      return
+    }
+
+    container.scrollTo({
+      left: container.scrollLeft > deleteActionWidth / 2 ? deleteActionWidth : 0,
+      behavior: "smooth",
+    })
+  }
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType !== "mouse" || event.button !== 0) {
+      return
+    }
+
+    if ((event.target as HTMLElement).closest("button")) {
+      return
+    }
+
+    const container = swipeContainerRef.current
+
+    if (!container) {
+      return
+    }
+
+    pointerDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startScrollLeft: container.scrollLeft,
+      hasMoved: false,
+    }
+
+    container.setPointerCapture(event.pointerId)
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    const container = swipeContainerRef.current
+    const pointerDrag = pointerDragRef.current
+
+    if (!container || !pointerDrag || pointerDrag.pointerId !== event.pointerId) {
+      return
+    }
+
+    const deltaX = event.clientX - pointerDrag.startX
+
+    if (!pointerDrag.hasMoved && Math.abs(deltaX) < 4) {
+      return
+    }
+
+    pointerDrag.hasMoved = true
+    container.scrollLeft = Math.min(
+      deleteActionWidth,
+      Math.max(0, pointerDrag.startScrollLeft - deltaX)
+    )
+    event.preventDefault()
+  }
+
+  function finishPointerDrag(event: PointerEvent<HTMLDivElement>) {
+    const container = swipeContainerRef.current
+    const pointerDrag = pointerDragRef.current
+
+    if (!container || !pointerDrag || pointerDrag.pointerId !== event.pointerId) {
+      return
+    }
+
+    if (container.hasPointerCapture(event.pointerId)) {
+      container.releasePointerCapture(event.pointerId)
+    }
+
+    if (pointerDrag.hasMoved) {
+      suppressClickUntilRef.current = Date.now() + 180
+      snapSwipePosition()
+    }
+
+    pointerDragRef.current = null
+  }
+
+  function handleContentClick(event: MouseEvent<HTMLDivElement>) {
+    if (Date.now() < suppressClickUntilRef.current) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+
+    hideDeleteAction()
+  }
+
   return (
     <article>
       <div className="overflow-hidden rounded-[1rem]">
         <div
           ref={swipeContainerRef}
-          className="swipe-reveal snap-x snap-mandatory overflow-x-auto scroll-smooth"
+          className="swipe-reveal snap-x snap-mandatory overflow-x-auto scroll-smooth md:cursor-grab"
           style={{ overscrollBehaviorX: "contain" }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={finishPointerDrag}
+          onPointerCancel={finishPointerDrag}
         >
           <div
             className="flex items-stretch"
             style={{ width: `calc(100% + ${deleteActionWidth}px)` }}
           >
             <div
-              className="w-full min-w-0 shrink-0 snap-start rounded-[1rem] bg-background/54 px-0.5 py-0.5"
-              onClick={hideDeleteAction}
+              className="w-full min-w-0 shrink-0 snap-start rounded-[1rem] bg-background/54 px-0.5 py-0.5 select-none"
+              onClick={handleContentClick}
             >
               <div className="rounded-[0.85rem] border border-border/45 bg-background/70 px-3 py-2">
                 <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
