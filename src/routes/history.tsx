@@ -1,5 +1,5 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
-import { useMutation, useQuery } from "convex/react"
+import { Link, createFileRoute, redirect } from "@tanstack/react-router"
+import { AuthLoading, Authenticated, useMutation, useQuery } from "convex/react"
 import { ChevronLeft, LoaderCircle, Trash2 } from "lucide-react"
 import {
   type KeyboardEvent,
@@ -9,14 +9,17 @@ import {
   useState,
 } from "react"
 import { api } from "../../convex/_generated/api"
+import { AuthLoadingScreen } from "@/components/auth-loading-screen"
 import { AppScreen } from "@/components/app-screen"
 import { Button } from "@/components/ui/button"
+import { getSignInHref } from "@/lib/auth-redirect"
 import type { ChallengeRecord } from "@/lib/challenges"
 import {
   type DailyRepTotal,
   getRollingWeekDailyRepTotals,
   getRollingWeekRange,
 } from "@/lib/history"
+import { getAuthState } from "@/lib/require-auth"
 import { cn } from "@/lib/utils"
 
 const fullDateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -66,8 +69,28 @@ function formatRecentWorkoutDate(date: Date, today: Date) {
 }
 
 export const Route = createFileRoute("/history")({
-  component: HistoryScreen,
+  beforeLoad: async ({ location }) => {
+    const { userId } = await getAuthState()
+
+    if (!userId) {
+      throw redirect({ href: getSignInHref(location.href) })
+    }
+  },
+  component: HistoryRouteComponent,
 })
+
+function HistoryRouteComponent() {
+  return (
+    <>
+      <AuthLoading>
+        <AuthLoadingScreen title="Loading history" />
+      </AuthLoading>
+      <Authenticated>
+        <HistoryScreen />
+      </Authenticated>
+    </>
+  )
+}
 
 function HistoryScreen() {
   const [today] = useState(() => new Date())
@@ -122,7 +145,7 @@ function HistoryScreen() {
       }
       showBranding={false}
       title="History"
-      subtitle="Anonymous pushup history shared across this Convex deployment."
+      subtitle="Your recent pushup history, saved to your account."
     >
       <div className="flex h-full flex-col gap-4">
         <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
@@ -187,7 +210,7 @@ function HistoryScreen() {
                 Recent workouts
               </h2>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Latest 20 completed sets.
+                Latest 20 completed sets from your account.
               </p>
             </div>
           </div>
@@ -253,7 +276,10 @@ function RecentWorkoutRow({
   const suppressClickUntilRef = useRef(0)
   const challengeDate = new Date(challenge.timestamp)
   const challengeDateLabel = fullDateFormatter.format(challengeDate)
-  const challengeCompactDateLabel = formatRecentWorkoutDate(challengeDate, today)
+  const challengeCompactDateLabel = formatRecentWorkoutDate(
+    challengeDate,
+    today
+  )
 
   function revealDeleteAction() {
     swipeContainerRef.current?.scrollTo({
@@ -277,7 +303,8 @@ function RecentWorkoutRow({
     }
 
     container.scrollTo({
-      left: container.scrollLeft > deleteActionWidth / 2 ? deleteActionWidth : 0,
+      left:
+        container.scrollLeft > deleteActionWidth / 2 ? deleteActionWidth : 0,
       behavior: "smooth",
     })
   }
@@ -311,7 +338,11 @@ function RecentWorkoutRow({
     const container = swipeContainerRef.current
     const pointerDrag = pointerDragRef.current
 
-    if (!container || !pointerDrag || pointerDrag.pointerId !== event.pointerId) {
+    if (
+      !container ||
+      !pointerDrag ||
+      pointerDrag.pointerId !== event.pointerId
+    ) {
       return
     }
 
@@ -333,7 +364,11 @@ function RecentWorkoutRow({
     const container = swipeContainerRef.current
     const pointerDrag = pointerDragRef.current
 
-    if (!container || !pointerDrag || pointerDrag.pointerId !== event.pointerId) {
+    if (
+      !container ||
+      !pointerDrag ||
+      pointerDrag.pointerId !== event.pointerId
+    ) {
       return
     }
 
@@ -388,7 +423,7 @@ function RecentWorkoutRow({
                       reps
                     </span>
                   </p>
-                  <p className="whitespace-nowrap rounded-full bg-muted/70 px-2 py-1 text-right text-[0.7rem] leading-none font-medium text-muted-foreground">
+                  <p className="rounded-full bg-muted/70 px-2 py-1 text-right text-[0.7rem] leading-none font-medium whitespace-nowrap text-muted-foreground">
                     {challengeCompactDateLabel}
                   </p>
                 </div>

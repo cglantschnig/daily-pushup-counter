@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/tanstack-react-start"
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
@@ -75,18 +76,32 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
+  if (!clerkPublishableKey) {
+    throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY environment variable.")
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: getThemeInitializationScript() }} />
+        <script
+          dangerouslySetInnerHTML={{ __html: getThemeInitializationScript() }}
+        />
         <HeadContent />
       </head>
       <body>
-        <ThemeBootstrap />
-        <ConvexClientProvider>
-          <ReminderBootstrap />
-          {children}
-        </ConvexClientProvider>
+        <ClerkProvider
+          publishableKey={clerkPublishableKey}
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+        >
+          <ThemeBootstrap />
+          <ConvexClientProvider>
+            <ReminderBootstrap />
+            {children}
+          </ConvexClientProvider>
+        </ClerkProvider>
         <TanStackDevtools
           config={{
             position: "bottom-right",
@@ -133,8 +148,9 @@ function ThemeBootstrap() {
     syncTheme()
     window.addEventListener(THEME_SETTINGS_EVENT, handleThemeChange)
     window.addEventListener("storage", handleStorage)
-    const unsubscribeFromSystemTheme =
-      subscribeToSystemThemeChange(handleSystemThemeChange)
+    const unsubscribeFromSystemTheme = subscribeToSystemThemeChange(
+      handleSystemThemeChange
+    )
 
     return () => {
       window.removeEventListener(THEME_SETTINGS_EVENT, handleThemeChange)

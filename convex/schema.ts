@@ -6,5 +6,6 @@ export default defineSchema({
     challengeType: v.literal("pushup"),
     completedAt: v.number(),
     repsCount: v.number(),
-  }).index("by_completedAt", ["completedAt"]),
+    userId: v.string(),
+  }).index("by_userId_completedAt", ["userId", "completedAt"]),
 })

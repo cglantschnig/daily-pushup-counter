@@ -1,5 +1,10 @@
 import type { Doc } from "./_generated/dataModel"
-import { mutation, query } from "./_generated/server"
+import {
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server"
 import { v } from "convex/values"
 
 function toChallengeRecord(
@@ -16,6 +21,16 @@ function toChallengeRecord(
   }
 }
 
+async function requireIdentity(ctx: MutationCtx | QueryCtx) {
+  const identity = await ctx.auth.getUserIdentity()
+
+  if (!identity) {
+    throw new Error("Authentication required.")
+  }
+
+  return identity
+}
+
 export const create = mutation({
   args: {
     challengeType: v.literal("pushup"),
@@ -23,7 +38,12 @@ export const create = mutation({
     repsCount: v.number(),
   },
   handler: async (ctx, args) => {
-    const id = await ctx.db.insert("challenges", args)
+    const identity = await requireIdentity(ctx)
+    const userId = identity.subject
+    const id = await ctx.db.insert("challenges", {
+      ...args,
+      userId,
+    })
 
     return toChallengeRecord({
       _id: id,
@@ -37,9 +57,10 @@ export const deleteOne = mutation({
     id: v.id("challenges"),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx)
     const challenge = await ctx.db.get(args.id)
 
-    if (!challenge) {
+    if (!challenge || challenge.userId !== identity.subject) {
       return false
     }
 
@@ -54,6 +75,7 @@ export const listRecent = query({
     limit: v.number(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx)
     const limit = Math.max(0, Math.floor(args.limit))
 
     if (limit === 0) {
@@ -62,7 +84,9 @@ export const listRecent = query({
 
     const challenges = await ctx.db
       .query("challenges")
-      .withIndex("by_completedAt")
+      .withIndex("by_userId_completedAt", (q) =>
+        q.eq("userId", identity.subject)
+      )
       .order("desc")
       .take(limit)
 
@@ -76,14 +100,18 @@ export const listForRange = query({
     endMs: v.number(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx)
     if (args.startMs >= args.endMs) {
       return []
     }
 
     const challenges = await ctx.db
       .query("challenges")
-      .withIndex("by_completedAt", (q) =>
-        q.gte("completedAt", args.startMs).lt("completedAt", args.endMs)
+      .withIndex("by_userId_completedAt", (q) =>
+        q
+          .eq("userId", identity.subject)
+          .gte("completedAt", args.startMs)
+          .lt("completedAt", args.endMs)
       )
       .order("desc")
       .collect()

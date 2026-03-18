@@ -1,8 +1,18 @@
+import { Show, UserButton, useUser } from "@clerk/tanstack-react-start"
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { Bell, BellOff, ChevronLeft, LaptopMinimal, Moon, Sun } from "lucide-react"
+import {
+  Bell,
+  BellOff,
+  ChevronLeft,
+  LaptopMinimal,
+  Moon,
+  Sun,
+} from "lucide-react"
 import { useEffect, useEffectEvent, useState } from "react"
 import type { ThemePreference } from "@/lib/theme"
 import { AppScreen } from "@/components/app-screen"
+import { Button } from "@/components/ui/button"
+import { getSignInHref, getSignUpHref } from "@/lib/auth-redirect"
 import {
   REMINDER_SETTINGS_EVENT,
   getNextReminderAt,
@@ -109,8 +119,9 @@ function getReminderSummary(
 }
 
 function SettingsScreen() {
-  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() =>
-    getStoredThemePreference()
+  const { user } = useUser()
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(
+    () => getStoredThemePreference()
   )
   const [reminderStatus, setReminderStatus] = useState<ReminderStatus>(() =>
     getReminderStatus()
@@ -172,8 +183,9 @@ function SettingsScreen() {
     window.addEventListener(THEME_SETTINGS_EVENT, handleThemeChange)
     window.addEventListener("storage", handleStorage)
     document.addEventListener("visibilitychange", handleVisibilityChange)
-    const unsubscribeFromSystemTheme =
-      subscribeToSystemThemeChange(handleSystemThemeChange)
+    const unsubscribeFromSystemTheme = subscribeToSystemThemeChange(
+      handleSystemThemeChange
+    )
     const intervalId = window.setInterval(refreshReminderStatus, 30_000)
 
     return () => {
@@ -221,10 +233,12 @@ function SettingsScreen() {
       setIsSaving(false)
     }
   })
-  const handleThemePreferenceChange = useEffectEvent((value: ThemePreference) => {
-    setThemePreference(value)
-    refreshThemePreference()
-  })
+  const handleThemePreferenceChange = useEffectEvent(
+    (value: ThemePreference) => {
+      setThemePreference(value)
+      refreshThemePreference()
+    }
+  )
   const resolvedTheme = resolveThemePreference(themePreference)
 
   return (
@@ -244,6 +258,51 @@ function SettingsScreen() {
       subtitle="Manage reminder notifications for quick pushup check-ins."
     >
       <div className="flex h-full flex-col gap-6">
+        <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
+          <div className="flex items-start gap-4">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-primary/12 bg-linear-to-br from-white to-primary/12 text-primary shadow-[0_18px_40px_rgba(17,87,166,0.1)] dark:from-white/10 dark:to-primary/20 dark:shadow-[0_18px_40px_rgba(3,8,20,0.4)]">
+              <span className="text-sm font-semibold tracking-[0.18em] uppercase">
+                ID
+              </span>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-lg leading-none font-semibold tracking-[-0.03em] text-foreground">
+                Account
+              </p>
+              <Show when="signed-out">
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Sign in to save workouts to your personal history and keep
+                  them separate from other users.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Button asChild className="rounded-2xl">
+                    <a href={getSignInHref("/settings")}>Sign in</a>
+                  </Button>
+                  <Button asChild variant="outline" className="rounded-2xl">
+                    <a href={getSignUpHref("/settings")}>Create account</a>
+                  </Button>
+                </div>
+              </Show>
+              <Show when="signed-in">
+                <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      Signed in as
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {user?.primaryEmailAddress?.emailAddress ??
+                        user?.fullName ??
+                        "your account"}
+                    </p>
+                  </div>
+                  <UserButton />
+                </div>
+              </Show>
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
           <div className="flex items-start gap-4">
             <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-primary/12 bg-linear-to-br from-white to-primary/12 text-primary shadow-[0_18px_40px_rgba(17,87,166,0.1)] dark:from-white/10 dark:to-primary/20 dark:shadow-[0_18px_40px_rgba(3,8,20,0.4)]">
