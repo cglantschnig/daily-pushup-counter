@@ -11,7 +11,7 @@ function createChallenge(
   reps: number
 ): ChallengeRecord {
   return {
-    id,
+    id: id as ChallengeRecord["id"],
     challenge_type: "pushup",
     timestamp: date.toISOString(),
     reps_count: reps,

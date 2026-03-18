@@ -1,14 +1,15 @@
+import type { Id } from "../../convex/_generated/dataModel"
 import type { WorkoutId } from "@/lib/workouts"
 
 export type ChallengeRecord = {
-  id: string
+  id: Id<"challenges">
   challenge_type: WorkoutId
   timestamp: string
   reps_count: number
 }
 
 export type ChallengeRecordInput = {
-  id: string
+  id: Id<"challenges">
   challengeType: WorkoutId
   completedAt: number
   repsCount: number

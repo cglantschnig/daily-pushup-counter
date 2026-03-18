@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest"
-import { toChallengeRecord } from "@/lib/challenges"
+import { type ChallengeRecordInput, toChallengeRecord } from "@/lib/challenges"
+
+function createChallengeId(value: string): ChallengeRecordInput["id"] {
+  return value as ChallengeRecordInput["id"]
+}
 
 describe("challenge records", () => {
   it("maps Convex challenge fields to the UI record shape", () => {
     expect(
       toChallengeRecord({
-        id: "challenge-1",
+        id: createChallengeId("challenge-1"),
         challengeType: "pushup",
         completedAt: Date.UTC(2026, 2, 10, 11, 0, 0),
         repsCount: 8,
@@ -21,7 +25,7 @@ describe("challenge records", () => {
   it("preserves zero-rep records without changing their values", () => {
     expect(
       toChallengeRecord({
-        id: "challenge-2",
+        id: createChallengeId("challenge-2"),
         challengeType: "pushup",
         completedAt: Date.UTC(2026, 2, 10, 12, 30, 0),
         repsCount: 0,

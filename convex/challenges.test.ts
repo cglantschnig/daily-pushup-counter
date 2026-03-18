@@ -47,6 +47,25 @@ describe("convex challenges", () => {
     })
   })
 
+  it("deletes an existing challenge", async () => {
+    const t = convexTest(schema, convexModules)
+
+    const challenge = await t.mutation(api.challenges.create, {
+      challengeType: "pushup",
+      completedAt: Date.UTC(2026, 2, 10, 11, 0, 0),
+      repsCount: 9,
+    })
+
+    const deleted = await t.mutation(api.challenges.deleteOne, {
+      id: challenge.id,
+    })
+
+    const challenges = await t.query(api.challenges.listRecent, { limit: 10 })
+
+    expect(deleted).toBe(true)
+    expect(challenges).toEqual([])
+  })
+
   it("lists only challenges inside the requested date range", async () => {
     const t = convexTest(schema, convexModules)
 

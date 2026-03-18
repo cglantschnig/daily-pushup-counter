@@ -1,14 +1,13 @@
+import type { Doc } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
-type ChallengeDoc = {
-  _id: string
-  challengeType: "pushup"
-  completedAt: number
-  repsCount: number
-}
-
-function toChallengeRecord(challenge: ChallengeDoc) {
+function toChallengeRecord(
+  challenge: Pick<
+    Doc<"challenges">,
+    "_id" | "challengeType" | "completedAt" | "repsCount"
+  >
+) {
   return {
     id: challenge._id,
     challenge_type: challenge.challengeType,
@@ -30,6 +29,23 @@ export const create = mutation({
       _id: id,
       ...args,
     })
+  },
+})
+
+export const deleteOne = mutation({
+  args: {
+    id: v.id("challenges"),
+  },
+  handler: async (ctx, args) => {
+    const challenge = await ctx.db.get(args.id)
+
+    if (!challenge) {
+      return false
+    }
+
+    await ctx.db.delete(args.id)
+
+    return true
   },
 })
 
