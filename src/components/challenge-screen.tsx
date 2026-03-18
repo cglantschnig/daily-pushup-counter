@@ -18,8 +18,8 @@ import { api } from "../../convex/_generated/api"
 export function ChallengeScreen() {
   const navigate = useNavigate()
   const saveChallenge = useMutation(api.challenges.create)
-  const [target] = useState(() => getRandomTarget())
   const [workout] = useState(() => getRandomWorkout())
+  const [target] = useState(() => getRandomTarget(workout))
   const challengeSequence = getChallengeSequence(target, workout)
   const initialStep = challengeSequence[0]
   const [hasStarted, setHasStarted] = useState(false)
