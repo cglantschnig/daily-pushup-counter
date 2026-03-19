@@ -1,4 +1,8 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
+import {
+  type ErrorComponentProps,
+  Link,
+  createFileRoute,
+} from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { ChevronLeft, LoaderCircle, Trash2 } from "lucide-react"
 import {
@@ -70,6 +74,7 @@ function formatRecentWorkoutDate(date: Date, today: Date) {
 export const Route = createFileRoute("/history")({
   beforeLoad: ({ location }) => requireAuthenticatedUser(location.href),
   component: HistoryRouteComponent,
+  errorComponent: HistoryErrorComponent,
 })
 
 function HistoryRouteComponent() {
@@ -82,6 +87,70 @@ function HistoryRouteComponent() {
         <HistoryScreen />
     </ConvexAuthGate>
   )
+}
+
+function HistoryErrorComponent({ error, reset }: ErrorComponentProps) {
+  const errorMessage = getErrorMessage(
+    error,
+    "The history page failed to load."
+  )
+
+  return (
+    <AppScreen
+      headerStart={
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-opacity hover:opacity-75"
+        >
+          <ChevronLeft className="size-4" />
+          <span>Home</span>
+        </Link>
+      }
+      showBranding={false}
+      title="History unavailable"
+      subtitle="The history page hit an error."
+    >
+      <div className="flex h-full flex-col gap-4">
+        <div className="rounded-[1.25rem] border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm leading-6 text-destructive">
+          {errorMessage}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <Button
+            type="button"
+            size="lg"
+            className="h-14 rounded-2xl text-sm font-semibold tracking-[0.18em] uppercase"
+            onClick={() => {
+              reset()
+              window.location.reload()
+            }}
+          >
+            Retry
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="h-14 rounded-2xl text-sm font-semibold tracking-[0.18em] uppercase"
+          >
+            <Link to="/">Back Home</Link>
+          </Button>
+        </div>
+      </div>
+    </AppScreen>
+  )
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error
+  }
+
+  return fallback
 }
 
 function HistoryScreen() {
@@ -115,9 +184,12 @@ function HistoryScreen() {
           "That workout was already removed. Refresh and try again."
         )
       }
-    } catch {
+    } catch (error) {
       setDeleteError(
-        "Could not delete this workout. Check your connection and try again."
+        getErrorMessage(
+          error,
+          "Could not delete this workout. Check your connection and try again."
+        )
       )
     } finally {
       setDeletingChallengeId(null)
