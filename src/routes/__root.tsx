@@ -76,11 +76,8 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
-  if (!clerkPublishableKey) {
-    throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY environment variable.")
-  }
+  const clerkPublishableKey =
+    import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim() || undefined
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -92,9 +89,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ClerkProvider
-          publishableKey={clerkPublishableKey}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
+          {...(clerkPublishableKey
+            ? { publishableKey: clerkPublishableKey }
+            : {})}
         >
           <ThemeBootstrap />
           <ConvexClientProvider>
