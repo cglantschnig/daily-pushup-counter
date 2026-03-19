@@ -1,7 +1,6 @@
-import { AuthLoading, Authenticated } from "convex/react"
 import { createFileRoute } from "@tanstack/react-router"
-import { AuthLoadingScreen } from "@/components/auth-loading-screen"
 import { ChallengeScreen } from "@/components/challenge-screen"
+import { ConvexAuthGate } from "@/components/convex-auth-gate"
 import { requireAuthenticatedUser } from "@/lib/require-auth"
 
 export const Route = createFileRoute("/challenge")({
@@ -11,13 +10,12 @@ export const Route = createFileRoute("/challenge")({
 
 function ChallengeRouteComponent() {
   return (
-    <>
-      <AuthLoading>
-        <AuthLoadingScreen title="Loading challenge" />
-      </AuthLoading>
-      <Authenticated>
+    <ConvexAuthGate
+      loadingTitle="Loading challenge"
+      unavailableTitle="Challenge unavailable"
+      unavailableMessage="Your account is signed in, but the app could not connect that session to Convex. Refresh and try again."
+    >
         <ChallengeScreen />
-      </Authenticated>
-    </>
+    </ConvexAuthGate>
   )
 }

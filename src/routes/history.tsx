@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { AuthLoading, Authenticated, useMutation, useQuery } from "convex/react"
+import { useMutation, useQuery } from "convex/react"
 import { ChevronLeft, LoaderCircle, Trash2 } from "lucide-react"
 import {
   type KeyboardEvent,
@@ -9,8 +9,8 @@ import {
   useState,
 } from "react"
 import { api } from "../../convex/_generated/api"
-import { AuthLoadingScreen } from "@/components/auth-loading-screen"
 import { AppScreen } from "@/components/app-screen"
+import { ConvexAuthGate } from "@/components/convex-auth-gate"
 import { Button } from "@/components/ui/button"
 import type { ChallengeRecord } from "@/lib/challenges"
 import {
@@ -74,14 +74,13 @@ export const Route = createFileRoute("/history")({
 
 function HistoryRouteComponent() {
   return (
-    <>
-      <AuthLoading>
-        <AuthLoadingScreen title="Loading history" />
-      </AuthLoading>
-      <Authenticated>
+    <ConvexAuthGate
+      loadingTitle="Loading history"
+      unavailableTitle="History unavailable"
+      unavailableMessage="Your account is signed in, but the app could not connect that session to Convex. Refresh and try again."
+    >
         <HistoryScreen />
-      </Authenticated>
-    </>
+    </ConvexAuthGate>
   )
 }
 
