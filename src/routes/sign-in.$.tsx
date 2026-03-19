@@ -1,6 +1,5 @@
 import { Link, createFileRoute, redirect } from "@tanstack/react-router"
 import { SignIn } from "@clerk/tanstack-react-start"
-import { ChevronLeft } from "lucide-react"
 import { AppScreen } from "@/components/app-screen"
 import {
   getAuthSearch,
@@ -29,11 +28,12 @@ function SignInScreen() {
     <AppScreen
       headerStart={
         <Link
-          to="/"
+          to="/sign-up/$"
+          params={{ _splat: "" }}
+          search={{ redirectTo }}
           className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-opacity hover:opacity-75"
         >
-          <ChevronLeft className="size-4" />
-          <span>Home</span>
+          <span>Create account</span>
         </Link>
       }
       showBranding={false}

@@ -2,8 +2,12 @@ import { Link, createFileRoute } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { AppScreen } from "@/components/app-screen"
 import { StarBorder } from "@/components/ui/star-border"
+import { requireAuthenticatedUser } from "@/lib/require-auth"
 
-export const Route = createFileRoute("/")({ component: App })
+export const Route = createFileRoute("/")({
+  beforeLoad: ({ location }) => requireAuthenticatedUser(location.href),
+  component: App,
+})
 
 function App() {
   return (

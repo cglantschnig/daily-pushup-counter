@@ -1,4 +1,4 @@
-import { Link, createFileRoute, redirect } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
 import { AuthLoading, Authenticated, useMutation, useQuery } from "convex/react"
 import { ChevronLeft, LoaderCircle, Trash2 } from "lucide-react"
 import {
@@ -12,14 +12,13 @@ import { api } from "../../convex/_generated/api"
 import { AuthLoadingScreen } from "@/components/auth-loading-screen"
 import { AppScreen } from "@/components/app-screen"
 import { Button } from "@/components/ui/button"
-import { getSignInHref } from "@/lib/auth-redirect"
 import type { ChallengeRecord } from "@/lib/challenges"
 import {
   type DailyRepTotal,
   getRollingWeekDailyRepTotals,
   getRollingWeekRange,
 } from "@/lib/history"
-import { getAuthState } from "@/lib/require-auth"
+import { requireAuthenticatedUser } from "@/lib/require-auth"
 import { cn } from "@/lib/utils"
 
 const fullDateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -69,13 +68,7 @@ function formatRecentWorkoutDate(date: Date, today: Date) {
 }
 
 export const Route = createFileRoute("/history")({
-  beforeLoad: async ({ location }) => {
-    const { userId } = await getAuthState()
-
-    if (!userId) {
-      throw redirect({ href: getSignInHref(location.href) })
-    }
-  },
+  beforeLoad: ({ location }) => requireAuthenticatedUser(location.href),
   component: HistoryRouteComponent,
 })
 

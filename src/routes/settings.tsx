@@ -1,4 +1,4 @@
-import { Show, UserButton, useUser } from "@clerk/tanstack-react-start"
+import { UserButton, useUser } from "@clerk/tanstack-react-start"
 import { Link, createFileRoute } from "@tanstack/react-router"
 import {
   Bell,
@@ -11,8 +11,6 @@ import {
 import { useEffect, useEffectEvent, useState } from "react"
 import type { ThemePreference } from "@/lib/theme"
 import { AppScreen } from "@/components/app-screen"
-import { Button } from "@/components/ui/button"
-import { getSignInHref, getSignUpHref } from "@/lib/auth-redirect"
 import {
   REMINDER_SETTINGS_EVENT,
   getNextReminderAt,
@@ -30,6 +28,7 @@ import {
   setThemePreference,
   subscribeToSystemThemeChange,
 } from "@/lib/theme"
+import { requireAuthenticatedUser } from "@/lib/require-auth"
 
 type ReminderStatus = ReturnType<typeof getReminderStatus>
 type ThemeOption = {
@@ -61,6 +60,7 @@ const themeOptions: Array<ThemeOption> = [
 ]
 
 export const Route = createFileRoute("/settings")({
+  beforeLoad: ({ location }) => requireAuthenticatedUser(location.href),
   component: SettingsScreen,
 })
 
@@ -270,35 +270,19 @@ function SettingsScreen() {
               <p className="text-lg leading-none font-semibold tracking-[-0.03em] text-foreground">
                 Account
               </p>
-              <Show when="signed-out">
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Sign in to save workouts to your personal history and keep
-                  them separate from other users.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <Button asChild className="rounded-2xl">
-                    <a href={getSignInHref("/settings")}>Sign in</a>
-                  </Button>
-                  <Button asChild variant="outline" className="rounded-2xl">
-                    <a href={getSignUpHref("/settings")}>Create account</a>
-                  </Button>
+              <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    Signed in as
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {user?.primaryEmailAddress?.emailAddress ??
+                      user?.fullName ??
+                      "your account"}
+                  </p>
                 </div>
-              </Show>
-              <Show when="signed-in">
-                <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      Signed in as
-                    </p>
-                    <p className="text-sm font-semibold text-foreground">
-                      {user?.primaryEmailAddress?.emailAddress ??
-                        user?.fullName ??
-                        "your account"}
-                    </p>
-                  </div>
-                  <UserButton />
-                </div>
-              </Show>
+                <UserButton />
+              </div>
             </div>
           </div>
         </section>
