@@ -48,6 +48,8 @@ For Clerk auth, also provide:
 
 You must also enable the Clerk-to-Convex integration so Clerk issues a `convex` JWT template that Convex can validate.
 
+If Clerk returns `JWT template not found` or `No JWT template exists with name: convex`, the app is pointed at a Clerk instance that does not have a JWT template literally named `convex`. Create that template in Clerk and verify `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `CLERK_JWT_ISSUER_DOMAIN` all belong to that same Clerk instance.
+
 ## Scripts
 
 ```bash

@@ -13,7 +13,7 @@ function ChallengeRouteComponent() {
     <ConvexAuthGate
       loadingTitle="Loading challenge"
       unavailableTitle="Challenge unavailable"
-      unavailableMessage="Your account is signed in, but the app could not connect that session to Convex. Refresh and try again."
+      unavailableMessage="Your account is signed in, but Clerk could not issue the `convex` JWT template Convex expects. Create that template in Clerk, make sure this app and Convex use the same Clerk instance, then refresh and try again."
     >
         <ChallengeScreen />
     </ConvexAuthGate>
