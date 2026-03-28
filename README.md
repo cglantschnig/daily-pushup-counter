@@ -1,6 +1,6 @@
 # Daily Pushup Counter
 
-Daily Pushup Counter is a small mobile-first workout app for running quick pushup sets in the browser. It generates a challenge, gives you an audio countdown, stores completed sets in Convex under the signed-in Clerk user, and can schedule reminder notifications for the next check-in.
+Daily Pushup Counter is a small mobile-first workout app for running quick pushup sets in the browser. It generates a challenge, gives you an audio countdown, and stores completed sets in Convex under the signed-in Clerk user.
 
 ## What The App Does
 
@@ -10,14 +10,13 @@ Daily Pushup Counter is a small mobile-first workout app for running quick pushu
 - Stores completed challenges in Convex for the signed-in Clerk user.
 - Shows recent personal history for the current signed-in user.
 - Lets the user switch between system, light, and dark themes.
-- Supports optional push reminders every 30 minutes when the browser allows notifications and periodic background sync.
 
 ## Routes
 
 - `/` home screen with the primary challenge entry point
 - `/challenge` generated workout summary, large `GO` button, and audio-assisted countdown
 - `/history` recent challenge history from Convex
-- `/settings` theme controls and reminder notification settings
+- `/settings` account and theme controls
 
 ## Tech Stack
 
@@ -68,7 +67,6 @@ pnpm format     # format TS/TSX/JS/JSX files
 
 - Challenge history is stored in Convex per signed-in Clerk user.
 - User preferences are still stored in the browser.
-- Notification reminders depend on browser support for the Notification API, service workers, and periodic sync.
 - Spoken countdown depends on speech synthesis support in the current browser/device.
 - The workout catalog is currently limited to pushups, but the route and workout helpers are already structured for expansion.
 

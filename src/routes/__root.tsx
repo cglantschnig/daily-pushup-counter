@@ -7,7 +7,6 @@ import { useEffect, useEffectEvent } from "react"
 import appCss from "../styles.css?url"
 
 import { ConvexClientProvider } from "@/components/convex-provider"
-import { ReminderBootstrap } from "@/components/reminder-bootstrap"
 import {
   LIGHT_THEME_COLOR,
   THEME_SETTINGS_EVENT,
@@ -97,7 +96,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           <ThemeBootstrap />
           <ConvexClientProvider>
-            <ReminderBootstrap />
             {children}
           </ConvexClientProvider>
         </ClerkProvider>
