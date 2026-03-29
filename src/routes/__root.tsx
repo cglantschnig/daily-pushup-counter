@@ -88,8 +88,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ClerkProvider
-          signInUrl="/sign-in"
-          signUpUrl="/sign-up"
+          signInUrl="/login"
+          signUpUrl="/register"
           {...(clerkPublishableKey
             ? { publishableKey: clerkPublishableKey }
             : {})}

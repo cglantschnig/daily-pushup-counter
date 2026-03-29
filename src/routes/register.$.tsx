@@ -1,14 +1,14 @@
+import { SignUp } from "@clerk/tanstack-react-start"
 import { Link, createFileRoute, redirect } from "@tanstack/react-router"
-import { SignIn } from "@clerk/tanstack-react-start"
-import { AppScreen } from "@/components/app-screen"
+import { AuthShell } from "@/components/auth-shell"
 import {
   getAuthSearch,
-  getSignUpHref,
+  getSignInHref,
   validateRedirectTo,
 } from "@/lib/auth-redirect"
 import { getAuthState } from "@/lib/require-auth"
 
-export const Route = createFileRoute("/sign-in/$")({
+export const Route = createFileRoute("/register/$")({
   validateSearch: (search) => getAuthSearch(search),
   beforeLoad: async ({ search }) => {
     const { userId } = await getAuthState()
@@ -17,38 +17,38 @@ export const Route = createFileRoute("/sign-in/$")({
       throw redirect({ href: validateRedirectTo(search.redirectTo) })
     }
   },
-  component: SignInScreen,
+  component: RegisterScreen,
 })
 
-function SignInScreen() {
+function RegisterScreen() {
   const search = Route.useSearch()
   const redirectTo = validateRedirectTo(search.redirectTo)
 
   return (
-    <AppScreen
-      headerStart={
+    <AuthShell
+      eyebrow="New Account"
+      title="Register"
+      subtitle="Create an account to save completed challenges, review your reps, and sync your settings."
+      alternateAction={
         <Link
-          to="/sign-up/$"
+          to="/login/$"
           params={{ _splat: "" }}
           search={{ redirectTo }}
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-opacity hover:opacity-75"
+          className="inline-flex rounded-full border border-border/70 bg-card/72 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-card"
         >
-          <span>Create account</span>
+          Login
         </Link>
       }
-      showBranding={false}
-      title="Sign in"
-      subtitle="Sign in to save workouts to your personal history."
     >
-      <div className="flex flex-1 items-center justify-center py-4">
-        <SignIn
-          path="/sign-in"
+      <div className="w-full">
+        <SignUp
+          path="/register"
           routing="path"
-          signUpUrl={getSignUpHref(redirectTo)}
+          signInUrl={getSignInHref(redirectTo)}
           fallbackRedirectUrl={redirectTo}
           forceRedirectUrl={redirectTo}
         />
       </div>
-    </AppScreen>
+    </AuthShell>
   )
 }

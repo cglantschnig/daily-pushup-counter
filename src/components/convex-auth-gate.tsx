@@ -44,7 +44,7 @@ export function ConvexAuthGate({
               size="lg"
               className="h-14 rounded-2xl text-sm font-semibold tracking-[0.18em] uppercase"
             >
-              <Link to="/">Back Home</Link>
+              <Link to="/challenge">Open challenge</Link>
             </Button>
           </div>
         </AppScreen>

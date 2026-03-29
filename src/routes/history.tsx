@@ -4,7 +4,7 @@ import {
   createFileRoute,
 } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
-import { ChevronLeft, LoaderCircle, Trash2 } from "lucide-react"
+import { LoaderCircle, Trash2 } from "lucide-react"
 import {
   type KeyboardEvent,
   type MouseEvent,
@@ -13,7 +13,7 @@ import {
   useState,
 } from "react"
 import { api } from "../../convex/_generated/api"
-import { AppScreen } from "@/components/app-screen"
+import { AppShell } from "@/components/app-shell"
 import { ConvexAuthGate } from "@/components/convex-auth-gate"
 import { Button } from "@/components/ui/button"
 import type { ChallengeRecord } from "@/lib/challenges"
@@ -96,17 +96,9 @@ function HistoryErrorComponent({ error, reset }: ErrorComponentProps) {
   )
 
   return (
-    <AppScreen
-      headerStart={
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-opacity hover:opacity-75"
-        >
-          <ChevronLeft className="size-4" />
-          <span>Home</span>
-        </Link>
-      }
-      showBranding={false}
+    <AppShell
+      section="history"
+      eyebrow="Saved Sessions"
       title="History unavailable"
       subtitle="The history page hit an error."
     >
@@ -133,11 +125,11 @@ function HistoryErrorComponent({ error, reset }: ErrorComponentProps) {
             size="lg"
             className="h-14 rounded-2xl text-sm font-semibold tracking-[0.18em] uppercase"
           >
-            <Link to="/">Back Home</Link>
+            <Link to="/challenge">Back to challenge</Link>
           </Button>
         </div>
       </div>
-    </AppScreen>
+    </AppShell>
   )
 }
 
@@ -197,35 +189,27 @@ function HistoryScreen() {
   }
 
   return (
-    <AppScreen
-      headerStart={
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-opacity hover:opacity-75"
-        >
-          <ChevronLeft className="size-4" />
-          <span>Home</span>
-        </Link>
-      }
-      showBranding={false}
+    <AppShell
+      section="history"
+      eyebrow="Saved Sessions"
       title="History"
-      subtitle="Your recent pushup history, saved to your account."
+      subtitle="Review weekly totals, inspect the last seven days, and manage saved challenge results."
     >
-      <div className="flex h-full flex-col gap-4">
-        <section className="rounded-[1.75rem] border border-border/70 bg-card/72 p-5 shadow-sm shadow-primary/5 dark:shadow-black/20">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
+        <section className="rounded-[2rem] border border-border/70 bg-card/74 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:shadow-black/20">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="[font-family:var(--font-display)] text-[0.7rem] tracking-[0.28em] text-primary uppercase">
                   {weekRangeLabel}
                 </p>
-                <h2 className="mt-1 text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
+                <h2 className="mt-3 text-3xl leading-none font-semibold tracking-[-0.07em] text-foreground">
                   Weekly reps
                 </h2>
               </div>
 
-              <div className="rounded-[1.25rem] border border-primary/12 bg-primary/8 px-4 py-3 text-right">
-                <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-primary uppercase">
+              <div className="rounded-[1.5rem] border border-primary/16 bg-primary/8 px-4 py-3 text-right">
+                <p className="[font-family:var(--font-display)] text-[0.64rem] tracking-[0.2em] text-primary uppercase">
                   Week Total
                 </p>
                 <p className="mt-1 text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
@@ -240,9 +224,9 @@ function HistoryScreen() {
               <>
                 <WeeklyRepsChart dailyTotals={dailyTotals} />
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-[1.25rem] border border-border/60 bg-background/72 px-4 py-3">
-                    <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                  <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-[1.4rem] border border-border/60 bg-background/72 px-4 py-3">
+                    <p className="[font-family:var(--font-display)] text-[0.64rem] tracking-[0.2em] text-muted-foreground uppercase">
                       Active Days
                     </p>
                     <p className="mt-1 text-xl leading-none font-semibold tracking-[-0.04em] text-foreground">
@@ -250,8 +234,8 @@ function HistoryScreen() {
                     </p>
                   </div>
 
-                  <div className="rounded-[1.25rem] border border-border/60 bg-background/72 px-4 py-3">
-                    <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                  <div className="rounded-[1.4rem] border border-border/60 bg-background/72 px-4 py-3">
+                    <p className="[font-family:var(--font-display)] text-[0.64rem] tracking-[0.2em] text-muted-foreground uppercase">
                       Best Day
                     </p>
                     <p className="mt-1 text-xl leading-none font-semibold tracking-[-0.04em] text-foreground">
@@ -267,10 +251,10 @@ function HistoryScreen() {
           </div>
         </section>
 
-        <section className="flex-1 rounded-[1.75rem] border border-border/70 bg-card/72 p-4 shadow-sm shadow-primary/5 dark:shadow-black/20">
+        <section className="flex-1 rounded-[2rem] border border-border/70 bg-card/74 p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:shadow-black/20">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl leading-none font-semibold tracking-[-0.05em] text-foreground">
+              <h2 className="text-2xl leading-none font-semibold tracking-[-0.06em] text-foreground">
                 Recent workouts
               </h2>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -309,7 +293,7 @@ function HistoryScreen() {
           )}
         </section>
       </div>
-    </AppScreen>
+    </AppShell>
   )
 }
 

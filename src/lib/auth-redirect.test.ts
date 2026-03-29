@@ -7,11 +7,11 @@ import {
 } from "./auth-redirect"
 
 describe("auth redirect helpers", () => {
-  it("falls back to the home page for invalid redirect targets", () => {
-    expect(validateRedirectTo(undefined)).toBe("/")
-    expect(validateRedirectTo("https://example.com/history")).toBe("/")
-    expect(validateRedirectTo("//example.com/history")).toBe("/")
-    expect(validateRedirectTo("history")).toBe("/")
+  it("falls back to the challenge page for invalid redirect targets", () => {
+    expect(validateRedirectTo(undefined)).toBe("/challenge")
+    expect(validateRedirectTo("https://example.com/history")).toBe("/challenge")
+    expect(validateRedirectTo("//example.com/history")).toBe("/challenge")
+    expect(validateRedirectTo("history")).toBe("/challenge")
   })
 
   it("keeps same-app redirect targets", () => {
@@ -29,8 +29,8 @@ describe("auth redirect helpers", () => {
 
   it("builds auth hrefs with redirect targets", () => {
     expect(getSignInHref("/history?tab=week")).toBe(
-      "/sign-in?redirectTo=%2Fhistory%3Ftab%3Dweek"
+      "/login?redirectTo=%2Fhistory%3Ftab%3Dweek"
     )
-    expect(getSignUpHref("/challenge")).toBe("/sign-up?redirectTo=%2Fchallenge")
+    expect(getSignUpHref("/challenge")).toBe("/register?redirectTo=%2Fchallenge")
   })
 })

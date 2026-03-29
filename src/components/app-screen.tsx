@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { BrandMark } from "@/components/brand-mark"
 
 type AppScreenProps = {
   headerStart?: ReactNode
@@ -22,12 +23,13 @@ export function AppScreen({
   return (
     <main className="relative min-h-svh overflow-hidden px-4 py-5 sm:px-6 sm:py-6">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-[-12rem] left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-primary/18 blur-3xl dark:bg-primary/12" />
-        <div className="absolute right-[-6rem] bottom-0 h-56 w-56 rounded-full bg-accent/45 blur-3xl dark:bg-accent/18" />
+        <div className="absolute left-[-8rem] top-[-10rem] h-72 w-72 rounded-full bg-primary/14 blur-3xl" />
+        <div className="absolute bottom-[-8rem] right-[-4rem] h-72 w-72 rounded-full bg-chart-2/12 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(15,23,42,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.05)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30 dark:opacity-20" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[calc(100svh-2.5rem)] max-w-md flex-col">
-        <section className="flex h-full flex-1 flex-col rounded-[2rem] border border-border/70 bg-card/78 p-6 shadow-[0_28px_80px_rgba(17,72,137,0.2)] backdrop-blur-xl dark:shadow-[0_28px_80px_rgba(3,8,20,0.48)] sm:p-7">
+      <div className="relative mx-auto flex min-h-[calc(100svh-2.5rem)] max-w-xl flex-col">
+        <section className="flex h-full flex-1 flex-col rounded-[2.1rem] border border-border/70 bg-card/80 p-6 shadow-[0_28px_90px_rgba(15,23,42,0.14)] backdrop-blur-2xl sm:p-7">
           <header className="mb-6 space-y-5">
             {headerStart || headerEnd ? (
               <div className="flex min-h-6 items-start justify-between gap-3">
@@ -36,31 +38,15 @@ export function AppScreen({
               </div>
             ) : null}
             {showBranding ? (
-              <div className="flex items-center gap-3">
-                <div className="flex size-14 items-center justify-center rounded-[1.35rem] border border-primary/12 bg-linear-to-br from-white to-primary/12 shadow-[0_18px_40px_rgba(17,87,166,0.14)] dark:from-white/10 dark:to-primary/20 dark:shadow-[0_18px_40px_rgba(3,8,20,0.4)]">
-                  <img
-                    src="/favicon-32x32.png"
-                    alt="Daily Pushup Counter logo"
-                    className="h-9 w-9 object-contain"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium tracking-[0.35em] text-primary uppercase">
-                    Daily Pushup Counter
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Quick sets, clearer progress.
-                  </p>
-                </div>
-              </div>
+              <BrandMark />
             ) : null}
             {title ? (
               <div className="space-y-2">
-                <h1 className="text-4xl leading-none font-semibold tracking-[-0.05em] text-foreground">
+                <h1 className="text-4xl leading-none font-semibold tracking-[-0.08em] text-foreground">
                   {title}
                 </h1>
                 {subtitle ? (
-                  <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+                  <p className="max-w-md text-sm leading-6 text-muted-foreground">
                     {subtitle}
                   </p>
                 ) : null}

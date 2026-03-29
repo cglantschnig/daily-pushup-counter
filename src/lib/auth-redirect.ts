@@ -1,4 +1,4 @@
-const DEFAULT_AUTH_REDIRECT = "/"
+const DEFAULT_AUTH_REDIRECT = "/challenge"
 
 export function validateRedirectTo(value: unknown) {
   if (typeof value !== "string") {
@@ -23,16 +23,16 @@ export function getAuthSearch(search: Record<string, unknown>) {
 
 export function getSignInHref(redirectTo?: string) {
   if (!redirectTo) {
-    return "/sign-in"
+    return "/login"
   }
 
-  return `/sign-in?redirectTo=${encodeURIComponent(redirectTo)}`
+  return `/login?redirectTo=${encodeURIComponent(redirectTo)}`
 }
 
 export function getSignUpHref(redirectTo?: string) {
   if (!redirectTo) {
-    return "/sign-up"
+    return "/register"
   }
 
-  return `/sign-up?redirectTo=${encodeURIComponent(redirectTo)}`
+  return `/register?redirectTo=${encodeURIComponent(redirectTo)}`
 }
