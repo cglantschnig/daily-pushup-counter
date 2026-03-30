@@ -25,7 +25,7 @@ export function AppScreen({
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-8rem] top-[-10rem] h-72 w-72 rounded-full bg-primary/14 blur-3xl" />
         <div className="absolute bottom-[-8rem] right-[-4rem] h-72 w-72 rounded-full bg-chart-2/12 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(15,23,42,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.05)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30 dark:opacity-20" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(14,76,133,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(56,151,205,0.05)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30 dark:opacity-20" />
       </div>
 
       <div className="relative mx-auto flex min-h-[calc(100svh-2.5rem)] max-w-xl flex-col">
