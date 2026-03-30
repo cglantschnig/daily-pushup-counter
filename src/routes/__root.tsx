@@ -7,6 +7,7 @@ import { useEffect, useEffectEvent } from "react"
 import appCss from "../styles.css?url"
 
 import { ConvexClientProvider } from "@/components/convex-provider"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   LIGHT_THEME_COLOR,
   THEME_SETTINGS_EVENT,
@@ -95,9 +96,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             : {})}
         >
           <ThemeBootstrap />
-          <ConvexClientProvider>
-            {children}
-          </ConvexClientProvider>
+          <TooltipProvider>
+            <ConvexClientProvider>{children}</ConvexClientProvider>
+          </TooltipProvider>
         </ClerkProvider>
         <TanStackDevtools
           config={{

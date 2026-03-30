@@ -1,10 +1,25 @@
 import { Link, useLocation } from "@tanstack/react-router"
-import { Dumbbell, History, Settings2 } from "lucide-react"
 import type { ReactNode } from "react"
-import { BrandMark } from "@/components/brand-mark"
-import { cn } from "@/lib/utils"
 
-type AppSection = "challenge" | "history" | "settings"
+import {
+  AppSidebar,
+  getSectionMeta,
+  type AppSection,
+} from "@/components/app-sidebar"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Separator } from "@/components/ui/separator"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
 
 type AppShellProps = {
   section: AppSection
@@ -14,27 +29,6 @@ type AppShellProps = {
   headerAction?: ReactNode
   children: ReactNode
 }
-
-const navigation = [
-  {
-    label: "Challenge",
-    to: "/challenge" as const,
-    section: "challenge" as const,
-    icon: Dumbbell,
-  },
-  {
-    label: "History",
-    to: "/history" as const,
-    section: "history" as const,
-    icon: History,
-  },
-  {
-    label: "Settings",
-    to: "/settings" as const,
-    section: "settings" as const,
-    icon: Settings2,
-  },
-]
 
 export function AppShell({
   section,
@@ -47,117 +41,81 @@ export function AppShell({
   const pathname = useLocation({
     select: (location) => location.pathname,
   })
+  const currentSection = getSectionMeta(section)
+  const isChallengeActive =
+    pathname === "/challenge" || pathname.startsWith("/challenge/")
 
   return (
-    <main className="relative min-h-svh overflow-hidden">
+    <SidebarProvider
+      defaultOpen
+      className="relative isolate min-h-svh overflow-hidden bg-transparent"
+    >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_top,rgba(255,110,72,0.18),transparent_52%)]" />
-        <div className="absolute right-[-8rem] top-20 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-[26rem] bg-[radial-gradient(circle_at_top,rgba(255,110,72,0.16),transparent_52%)]" />
+        <div className="absolute top-16 right-[-8rem] h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute bottom-[-8rem] left-[-4rem] h-72 w-72 rounded-full bg-chart-2/10 blur-3xl" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(15,23,42,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.05)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30 dark:opacity-15" />
       </div>
 
-      <div className="relative mx-auto flex min-h-svh max-w-7xl flex-col lg:flex-row">
-        <aside className="hidden lg:flex lg:w-[18.5rem] lg:flex-col lg:justify-between lg:border-r lg:border-border/60 lg:bg-card/55 lg:px-6 lg:py-8 lg:backdrop-blur-xl">
-          <div className="space-y-8">
-            <BrandMark />
+      <AppSidebar section={section} />
 
-            <nav className="space-y-2">
-              {navigation.map((item) => {
-                const Icon = item.icon
-                const isActive = item.section === section
-
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={cn(
-                      "flex items-center gap-3 rounded-[1.4rem] border px-4 py-3 text-sm font-semibold transition-all",
-                      isActive
-                        ? "border-primary/30 bg-primary text-primary-foreground shadow-[0_18px_40px_rgba(247,86,54,0.24)]"
-                        : "border-transparent bg-transparent text-muted-foreground hover:border-border/70 hover:bg-background/85 hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="size-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                )
-              })}
-            </nav>
-          </div>
-
-          <section className="rounded-[1.75rem] border border-border/70 bg-background/78 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-            <p className="[font-family:var(--font-display)] text-[0.7rem] tracking-[0.28em] text-primary uppercase">
-              Daily Brief
-            </p>
-            <p className="mt-3 text-2xl leading-none font-semibold tracking-[-0.05em] text-foreground">
-              Every clean rep earns better data.
-            </p>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Use the menu to move between the live challenge, your saved
-              sessions, and account controls.
-            </p>
-          </section>
-        </aside>
-
-        <div className="flex min-h-svh flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-border/60 bg-background/74 backdrop-blur-xl">
-            <div className="mx-auto flex max-w-6xl items-start justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
-              <div className="min-w-0">
-                <BrandMark compact className="lg:hidden" />
-                <div className="mt-4 space-y-2 lg:mt-0">
-                  <p className="[font-family:var(--font-display)] text-[0.72rem] tracking-[0.28em] text-primary uppercase">
-                    {eyebrow}
-                  </p>
-                  <div>
-                    <h1 className="text-[clamp(2rem,4vw,3.4rem)] leading-none font-semibold tracking-[-0.08em] text-foreground">
-                      {title}
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                      {subtitle}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {headerAction ? (
-                <div className="shrink-0">{headerAction}</div>
-              ) : null}
+      <SidebarInset className="relative min-h-svh bg-transparent md:peer-data-[variant=inset]:my-3 md:peer-data-[variant=inset]:mr-3 md:peer-data-[variant=inset]:rounded-[2rem] md:peer-data-[variant=inset]:border md:peer-data-[variant=inset]:border-border/60 md:peer-data-[variant=inset]:bg-background/72 md:peer-data-[variant=inset]:shadow-[0_30px_90px_rgba(15,23,42,0.12)] md:peer-data-[variant=inset]:backdrop-blur-2xl dark:md:peer-data-[variant=inset]:shadow-black/20">
+        <header className="sticky top-0 z-20 border-b border-border/55 bg-background/74 backdrop-blur-xl">
+          <div className="flex min-h-16 items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-3">
+              <SidebarTrigger className="rounded-xl border border-border/65 bg-card/70 text-foreground hover:bg-card" />
+              <Separator
+                orientation="vertical"
+                className="hidden h-5 bg-border/70 sm:block"
+              />
+              <Breadcrumb>
+                <BreadcrumbList className="gap-2 text-[0.72rem] tracking-[0.16em] uppercase">
+                  <BreadcrumbItem className="hidden sm:inline-flex">
+                    <BreadcrumbLink asChild>
+                      <Link
+                        to="/challenge"
+                        className={isChallengeActive ? "text-foreground" : ""}
+                      >
+                        Training Hub
+                      </Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="hidden sm:block" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{currentSection.group}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{currentSection.label}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
             </div>
-          </header>
 
-          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-8">
-            {children}
+            {headerAction ? (
+              <div className="shrink-0">{headerAction}</div>
+            ) : null}
           </div>
-        </div>
-      </div>
+        </header>
 
-      <nav className="fixed inset-x-4 bottom-4 z-30 rounded-[1.8rem] border border-border/70 bg-background/90 p-2 shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur-2xl lg:hidden">
-        <div className="grid grid-cols-3 gap-2">
-          {navigation.map((item) => {
-            const Icon = item.icon
-            const isActive =
-              pathname === item.to ||
-              (item.to !== "/challenge" && pathname.startsWith(item.to))
+        <div className="relative flex flex-1 flex-col px-4 pt-4 pb-8 sm:px-6 lg:px-8">
+          <section className="rounded-[2rem] border border-border/65 bg-card/72 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-6 dark:shadow-black/15">
+            <p className="[font-family:var(--font-display)] text-[0.72rem] tracking-[0.28em] text-primary uppercase">
+              {eyebrow}
+            </p>
+            <div className="mt-4 max-w-3xl">
+              <h1 className="text-[clamp(2.2rem,4vw,3.7rem)] leading-none font-semibold tracking-[-0.08em] text-foreground">
+                {title}
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                {subtitle}
+              </p>
+            </div>
+          </section>
 
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-[1.3rem] px-3 py-2 text-[0.68rem] font-semibold tracking-[0.16em] uppercase transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-background hover:text-foreground"
-                )}
-              >
-                <Icon className="size-4" />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
+          <div className="mt-6 flex flex-1 flex-col">{children}</div>
         </div>
-      </nav>
-    </main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
