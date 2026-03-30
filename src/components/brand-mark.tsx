@@ -11,11 +11,11 @@ export function BrandMark({
 }: BrandMarkProps) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <div className="flex size-12 items-center justify-center rounded-[1.4rem] border border-white/12 bg-foreground text-background shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
+      <div className="flex size-12 items-center justify-center rounded-[1.4rem] border border-primary/25 bg-gradient-to-br from-primary/20 via-primary/10 to-chart-2/20 shadow-[0_18px_50px_rgba(14,76,133,0.2)]">
         <img
           src="/favicon-32x32.png"
           alt="Daily Pushup Counter logo"
-          className="h-7 w-7 object-contain invert"
+          className="h-7 w-7 object-contain"
         />
       </div>
 
