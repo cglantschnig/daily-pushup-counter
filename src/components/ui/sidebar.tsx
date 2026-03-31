@@ -354,7 +354,7 @@ function Sidebar({
               "data-open:animate-none data-closed:animate-none"
           )}
           overlayStyle={
-            isMobileSwipePreview ? { opacity: mobileSwipeProgress * 0.8 } : {}
+            isMobileSwipePreview ? { opacity: mobileSwipeProgress } : {}
           }
           style={
             {
