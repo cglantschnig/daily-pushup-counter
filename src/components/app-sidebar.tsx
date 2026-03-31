@@ -117,7 +117,7 @@ export function AppSidebar({ section: _section }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter className="p-3">
-        <p className="px-1 text-[0.65rem] tracking-[0.18em] text-sidebar-foreground/55 uppercase group-data-[collapsible=icon]:text-center">
+        <p className="w-full px-1 text-right text-[0.65rem] tracking-[0.18em] text-sidebar-foreground/55 uppercase group-data-[collapsible=icon]:text-center">
           v{__APP_VERSION__}
         </p>
       </SidebarFooter>
