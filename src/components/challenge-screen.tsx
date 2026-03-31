@@ -152,7 +152,7 @@ export function ChallengeScreen() {
   return (
     <AppShell
       section="challenge"
-      eyebrow="Default Screen"
+      eyebrow={null}
       title="Challenge"
       subtitle="Launch straight into the next set, follow the audio countdown, and save the result into your training history."
       headerAction={
