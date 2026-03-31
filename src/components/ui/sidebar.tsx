@@ -41,8 +41,8 @@ type SidebarContextProps = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
-  mobileSwipeOffset: number
-  setMobileSwipeOffset: (offset: number) => void
+  mobileSwipeProgress: number | null
+  setMobileSwipeProgress: (progress: number | null) => void
   isMobile: boolean
   toggleSidebar: () => void
 }
@@ -73,9 +73,12 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
-  const [mobileSwipeOffset, setMobileSwipeOffset] = React.useState(0)
+  const [mobileSwipeProgress, setMobileSwipeProgress] = React.useState<
+    number | null
+  >(null)
   const touchStartXRef = React.useRef<number | null>(null)
   const touchStartYRef = React.useRef<number | null>(null)
+  const touchStartProgressRef = React.useRef(0)
   const isSwipeTrackingRef = React.useRef(false)
 
   // This is the internal state of the sidebar.
@@ -123,18 +126,24 @@ function SidebarProvider({
       isSwipeTrackingRef.current = false
       touchStartXRef.current = null
       touchStartYRef.current = null
-      setMobileSwipeOffset(0)
+      touchStartProgressRef.current = 0
+      setMobileSwipeProgress(null)
       return
     }
 
     const handleTouchStart = (event: TouchEvent) => {
-      if (openMobile || event.touches.length !== 1) {
+      if (event.touches.length !== 1) {
         isSwipeTrackingRef.current = false
         return
       }
 
       const touch = event.touches[0]
-      if (touch.clientX > MOBILE_SWIPE_EDGE_WIDTH) {
+      const canStartFromEdge =
+        !openMobile && touch.clientX <= MOBILE_SWIPE_EDGE_WIDTH
+      const canStartFromSidebar =
+        openMobile && touch.clientX <= MOBILE_SIDEBAR_WIDTH_PX
+
+      if (!canStartFromEdge && !canStartFromSidebar) {
         isSwipeTrackingRef.current = false
         return
       }
@@ -142,12 +151,15 @@ function SidebarProvider({
       isSwipeTrackingRef.current = true
       touchStartXRef.current = touch.clientX
       touchStartYRef.current = touch.clientY
+      touchStartProgressRef.current = openMobile ? 1 : 0
+      setMobileSwipeProgress(openMobile ? 1 : 0)
     }
 
     const clearSwipeState = () => {
       isSwipeTrackingRef.current = false
       touchStartXRef.current = null
       touchStartYRef.current = null
+      touchStartProgressRef.current = 0
     }
 
     const handleTouchMove = (event: TouchEvent) => {
@@ -159,7 +171,7 @@ function SidebarProvider({
       const startX = touchStartXRef.current
       const startY = touchStartYRef.current
 
-      if (!touch || startX === null || startY === null) {
+      if (startX === null || startY === null) {
         return
       }
 
@@ -167,18 +179,19 @@ function SidebarProvider({
       const deltaY = Math.abs(touch.clientY - startY)
 
       if (deltaY > MOBILE_SWIPE_MAX_VERTICAL_DRIFT && deltaY > deltaX) {
-        setMobileSwipeOffset(0)
+        setMobileSwipeProgress(null)
         clearSwipeState()
         return
       }
 
-      const nextOffset = Math.min(
-        Math.max(deltaX, 0),
-        MOBILE_SIDEBAR_WIDTH_PX
+      const startProgress = touchStartProgressRef.current
+      const nextProgress = Math.min(
+        Math.max(startProgress + deltaX / MOBILE_SIDEBAR_WIDTH_PX, 0),
+        1
       )
-      setMobileSwipeOffset(nextOffset)
+      setMobileSwipeProgress(nextProgress)
 
-      if (nextOffset > 0) {
+      if (nextProgress > 0 && nextProgress < 1) {
         event.preventDefault()
       }
     }
@@ -191,29 +204,38 @@ function SidebarProvider({
       const touch = event.changedTouches[0]
       const startX = touchStartXRef.current
       const startY = touchStartYRef.current
+      const startProgress = touchStartProgressRef.current
       clearSwipeState()
 
-      if (!touch || startX === null || startY === null) {
+      if (startX === null || startY === null) {
         return
       }
 
-      const deltaX = touch.clientX - startX
       const deltaY = Math.abs(touch.clientY - startY)
-      const isHorizontalSwipe =
-        deltaX >= MOBILE_SWIPE_MIN_DISTANCE &&
-        deltaY <= MOBILE_SWIPE_MAX_VERTICAL_DRIFT
+      const finalProgress = mobileSwipeProgress ?? (openMobile ? 1 : 0)
+      const progressDelta = finalProgress - startProgress
+      const movedEnough =
+        Math.abs(progressDelta) >=
+        MOBILE_SWIPE_MIN_DISTANCE / MOBILE_SIDEBAR_WIDTH_PX
 
-      setMobileSwipeOffset(0)
-      if (isHorizontalSwipe) {
-        setOpenMobile(true)
+      setMobileSwipeProgress(null)
+      if (deltaY > MOBILE_SWIPE_MAX_VERTICAL_DRIFT && !movedEnough) {
+        return
       }
+
+      if (movedEnough) {
+        setOpenMobile(finalProgress >= 0.5)
+        return
+      }
+
+      setOpenMobile(startProgress >= 0.5)
     }
 
     window.addEventListener("touchstart", handleTouchStart, { passive: true })
     window.addEventListener("touchmove", handleTouchMove, { passive: false })
     window.addEventListener("touchend", handleTouchEnd, { passive: true })
     const handleTouchCancel = () => {
-      setMobileSwipeOffset(0)
+      setMobileSwipeProgress(null)
       clearSwipeState()
     }
 
@@ -225,11 +247,11 @@ function SidebarProvider({
       window.removeEventListener("touchend", handleTouchEnd)
       window.removeEventListener("touchcancel", handleTouchCancel)
     }
-  }, [isMobile, openMobile, setOpenMobile])
+  }, [isMobile, mobileSwipeProgress, openMobile, setOpenMobile])
 
   React.useEffect(() => {
     if (openMobile) {
-      setMobileSwipeOffset(0)
+      setMobileSwipeProgress(null)
     }
   }, [openMobile])
 
@@ -245,8 +267,8 @@ function SidebarProvider({
       isMobile,
       openMobile,
       setOpenMobile,
-      mobileSwipeOffset,
-      setMobileSwipeOffset,
+      mobileSwipeProgress,
+      setMobileSwipeProgress,
       toggleSidebar,
     }),
     [
@@ -256,8 +278,8 @@ function SidebarProvider({
       isMobile,
       openMobile,
       setOpenMobile,
-      mobileSwipeOffset,
-      setMobileSwipeOffset,
+      mobileSwipeProgress,
+      setMobileSwipeProgress,
       toggleSidebar,
     ]
   )
@@ -303,14 +325,12 @@ function Sidebar({
     state,
     openMobile,
     setOpenMobile,
-    mobileSwipeOffset,
-    setMobileSwipeOffset,
+    mobileSwipeProgress,
+    setMobileSwipeProgress,
   } = useSidebar()
-  const mobileSwipeProgress = Math.min(
-    mobileSwipeOffset / MOBILE_SIDEBAR_WIDTH_PX,
-    1
-  )
-  const isMobileSwipePreview = isMobile && !openMobile && mobileSwipeOffset > 0
+  const hasMobileSwipeGesture = isMobile && mobileSwipeProgress !== null
+  const effectiveMobileProgress =
+    mobileSwipeProgress ?? (openMobile ? 1 : 0)
 
   if (collapsible === "none") {
     return (
@@ -331,9 +351,9 @@ function Sidebar({
     return (
       <Sheet
         modal={openMobile}
-        open={openMobile || isMobileSwipePreview}
+        open={openMobile || hasMobileSwipeGesture}
         onOpenChange={(nextOpen) => {
-          setMobileSwipeOffset(0)
+          setMobileSwipeProgress(null)
           setOpenMobile(nextOpen)
         }}
         {...props}
@@ -345,22 +365,22 @@ function Sidebar({
           data-mobile="true"
           className={cn(
             "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
-            isMobileSwipePreview &&
+            hasMobileSwipeGesture &&
               "data-open:animate-none data-closed:animate-none transition-none"
           )}
           overlayClassName={cn(
             "transition-opacity duration-200 ease-in-out data-open:animate-none data-open:opacity-100 data-closed:animate-none data-closed:opacity-0",
-            isMobileSwipePreview &&
+            hasMobileSwipeGesture &&
               "data-open:animate-none data-closed:animate-none"
           )}
-          overlayStyle={
-            isMobileSwipePreview ? { opacity: mobileSwipeProgress } : {}
-          }
+          overlayStyle={{ opacity: effectiveMobileProgress }}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              transform: isMobileSwipePreview
-                ? `translate3d(calc(-100% + ${mobileSwipeOffset}px), 0, 0)`
+              transform: hasMobileSwipeGesture
+                ? `translate3d(calc(-100% + ${
+                    effectiveMobileProgress * MOBILE_SIDEBAR_WIDTH_PX
+                  }px), 0, 0)`
                 : undefined,
             } as React.CSSProperties
           }
