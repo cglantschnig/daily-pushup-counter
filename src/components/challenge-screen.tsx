@@ -10,10 +10,16 @@ import {
   saveChallengeCompletion,
 } from "@/lib/challenge-completion"
 import { getChallengeSequence } from "@/lib/challenge-sequence"
-import { cancelSpeech, initializeSpeech, speakText } from "@/lib/speech"
+import { cancelSpeech, primeSpeech, speakText } from "@/lib/speech"
 import { getRandomTarget, getRandomWorkout } from "@/lib/workouts"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
+
+type AudioState =
+  | "warming"
+  | "ready-gemini"
+  | "ready-browser-fallback"
+  | "unavailable"
 
 export function ChallengeScreen() {
   const navigate = useNavigate()
@@ -29,20 +35,52 @@ export function ChallengeScreen() {
   const [sequencePhase, setSequencePhase] = useState<ChallengeSequencePhase>(
     initialStep.phase
   )
+  const [audioState, setAudioState] = useState<AudioState>("warming")
+  const [isPreparingAudio, setIsPreparingAudio] = useState(false)
   const sequenceTimeoutRef = useRef<number | null>(null)
   const sequenceSessionRef = useRef(0)
   const completionPayloadRef = useRef<ChallengePayload | null>(null)
+  const pendingStartSessionRef = useRef<number | null>(null)
+  const primeSpeechPromiseRef = useRef<Promise<void> | null>(null)
 
   useEffect(() => {
-    void initializeSpeech()
+    let isActive = true
+
+    primeSpeechPromiseRef.current = primeSpeech(
+      challengeSequence
+        .map((step) => step.speech)
+        .filter((speech): speech is string => Boolean(speech))
+    ).then((diagnostics) => {
+      if (!isActive) {
+        return
+      }
+
+      if (diagnostics.provider === "gemini-live" && diagnostics.isPrimed) {
+        setAudioState("ready-gemini")
+        return
+      }
+
+      if (diagnostics.provider === "browser" && diagnostics.initialized) {
+        setAudioState("ready-browser-fallback")
+        return
+      }
+
+      setAudioState("unavailable")
+    })
 
     return () => {
-      clearSequence()
+      isActive = false
+      clearSequence(false)
     }
   }, [])
 
-  function clearSequence() {
+  function clearSequence(resetPreparingAudio = true) {
     sequenceSessionRef.current += 1
+    pendingStartSessionRef.current = null
+
+    if (resetPreparingAudio) {
+      setIsPreparingAudio(false)
+    }
 
     if (sequenceTimeoutRef.current !== null) {
       window.clearTimeout(sequenceTimeoutRef.current)
@@ -60,6 +98,25 @@ export function ChallengeScreen() {
     setSaveError(null)
     setCurrentStep(initialStep.label)
     setSequencePhase(initialStep.phase)
+  }
+
+  function startSequence(sessionId: number) {
+    sequenceSessionRef.current = sessionId
+
+    if (sequenceTimeoutRef.current !== null) {
+      window.clearTimeout(sequenceTimeoutRef.current)
+      sequenceTimeoutRef.current = null
+    }
+
+    void cancelSpeech()
+    setHasStarted(true)
+    setIsPreparingAudio(false)
+    setIsCompleting(false)
+    setSaveError(null)
+    completionPayloadRef.current = null
+    setCurrentStep(initialStep.label)
+    setSequencePhase(initialStep.phase)
+    runSequenceStep(0, sessionId)
   }
 
   function runSequenceStep(stepIndex: number, sessionId: number) {
@@ -85,23 +142,32 @@ export function ChallengeScreen() {
     }, step.delayMs ?? 0)
   }
 
-  function handleStart() {
-    const sessionId = sequenceSessionRef.current + 1
-    sequenceSessionRef.current = sessionId
-
-    if (sequenceTimeoutRef.current !== null) {
-      window.clearTimeout(sequenceTimeoutRef.current)
-      sequenceTimeoutRef.current = null
+  async function handleStart() {
+    if (hasStarted || isPreparingAudio) {
+      return
     }
 
-    void cancelSpeech()
-    setHasStarted(true)
-    setIsCompleting(false)
-    setSaveError(null)
-    completionPayloadRef.current = null
-    setCurrentStep(initialStep.label)
-    setSequencePhase(initialStep.phase)
-    runSequenceStep(0, sessionId)
+    const sessionId = sequenceSessionRef.current + 1
+
+    if (audioState === "warming" && primeSpeechPromiseRef.current) {
+      pendingStartSessionRef.current = sessionId
+      setIsPreparingAudio(true)
+
+      try {
+        await primeSpeechPromiseRef.current
+      } finally {
+        if (pendingStartSessionRef.current === sessionId) {
+          setIsPreparingAudio(false)
+        }
+      }
+
+      if (pendingStartSessionRef.current !== sessionId) {
+        return
+      }
+    }
+
+    pendingStartSessionRef.current = null
+    startSequence(sessionId)
   }
 
   function handleExit() {
@@ -148,6 +214,14 @@ export function ChallengeScreen() {
       : hasStarted
         ? "Live countdown"
         : "Ready to start"
+  const audioStatusLabel =
+    isPreparingAudio || audioState === "warming"
+      ? "Preparing AI audio..."
+      : audioState === "ready-gemini"
+        ? "AI audio ready"
+        : audioState === "ready-browser-fallback"
+          ? "Using device speech fallback"
+          : "Audio unavailable"
 
   return (
     <AppShell
@@ -247,13 +321,19 @@ export function ChallengeScreen() {
             <div className="flex flex-col items-center gap-4 text-center">
               <button
                 type="button"
-                onClick={handleStart}
-                className="go-button-pulse flex h-48 w-48 items-center justify-center rounded-full border border-primary/20 bg-primary text-3xl font-semibold tracking-[0.3em] text-primary-foreground uppercase shadow-[0_28px_70px_rgba(247,86,54,0.35)] transition-transform hover:scale-[1.02] sm:h-56 sm:w-56"
+                disabled={isPreparingAudio}
+                onClick={() => void handleStart()}
+                className="go-button-pulse flex h-48 w-48 items-center justify-center rounded-full border border-primary/20 bg-primary text-3xl font-semibold tracking-[0.3em] text-primary-foreground uppercase shadow-[0_28px_70px_rgba(247,86,54,0.35)] transition-transform enabled:hover:scale-[1.02] disabled:cursor-wait disabled:opacity-80 sm:h-56 sm:w-56"
               >
-                GO
+                {isPreparingAudio ? "..." : "GO"}
               </button>
               <p className="text-sm font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-                Tap to begin the countdown
+                {isPreparingAudio
+                  ? "Preparing countdown audio"
+                  : "Tap to begin the countdown"}
+              </p>
+              <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">
+                {audioStatusLabel}
               </p>
             </div>
           )}

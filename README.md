@@ -1,12 +1,12 @@
 # Daily Pushup Counter
 
-Daily Pushup Counter is a small mobile-first workout app for running quick pushup sets in the browser. It generates a challenge, gives you an audio countdown, and stores completed sets in Convex under the signed-in Clerk user.
+Daily Pushup Counter is a small mobile-first workout app for running quick pushup sets in the browser. It generates a challenge, prefetched Gemini Live countdown audio, and stores completed sets in Convex under the signed-in Clerk user.
 
 ## What The App Does
 
 - Starts a challenge flow from a simple home screen.
 - Generates a random target between 5 and 10 reps.
-- Starts the spoken `3, 2, 1, START` countdown directly from the challenge screen.
+- Starts the spoken `3, 2, 1, GO` countdown and rep count directly from the challenge screen.
 - Stores completed challenges in Convex for the signed-in Clerk user.
 - Shows recent personal history for the current signed-in user.
 - Lets the user switch between system, light, and dark themes.
@@ -25,7 +25,8 @@ Daily Pushup Counter is a small mobile-first workout app for running quick pushu
 - TypeScript
 - Tailwind CSS 4
 - shadcn/ui primitives
-- `easy-speech` for spoken countdown support
+- Gemini Live API for prefetched challenge audio
+- `easy-speech` as the browser speech fallback
 
 ## Local Development
 
@@ -44,6 +45,12 @@ For Clerk auth, also provide:
 - `VITE_CLERK_PUBLISHABLE_KEY`
 - `CLERK_SECRET_KEY`
 - `CLERK_JWT_ISSUER_DOMAIN`
+- `GEMINI_API_KEY`
+
+Optional Gemini Live overrides:
+
+- `GEMINI_LIVE_MODEL`
+- `GEMINI_LIVE_VOICE_NAME`
 
 You must also enable the Clerk-to-Convex integration so Clerk issues a `convex` JWT template that Convex can validate.
 
@@ -67,7 +74,8 @@ pnpm format     # format TS/TSX/JS/JSX files
 
 - Challenge history is stored in Convex per signed-in Clerk user.
 - User preferences are still stored in the browser.
-- Spoken countdown depends on speech synthesis support in the current browser/device.
+- Challenge audio is prefetched from Gemini Live whenever `GEMINI_API_KEY` is configured and reachable.
+- Browser speech synthesis remains available as the fallback if Gemini Live audio cannot be initialized.
 - The workout catalog is currently limited to pushups, but the route and workout helpers are already structured for expansion.
 
 ## Clerk + Convex rollout
