@@ -369,11 +369,14 @@ function Sidebar({
               "data-open:animate-none data-closed:animate-none transition-none"
           )}
           overlayClassName={cn(
-            "transition-opacity duration-200 ease-in-out data-open:animate-none data-open:opacity-100 data-closed:animate-none data-closed:opacity-0",
             hasMobileSwipeGesture &&
-              "data-open:animate-none data-closed:animate-none"
+              "bg-black/80 transition-none data-open:animate-none data-closed:animate-none"
           )}
-          overlayStyle={{ opacity: effectiveMobileProgress }}
+          overlayStyle={
+            hasMobileSwipeGesture
+              ? { opacity: effectiveMobileProgress * 0.8 }
+              : undefined
+          }
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
