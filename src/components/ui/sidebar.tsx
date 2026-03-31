@@ -30,6 +30,9 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const MOBILE_SWIPE_EDGE_WIDTH = 24
+const MOBILE_SWIPE_MIN_DISTANCE = 56
+const MOBILE_SWIPE_MAX_VERTICAL_DRIFT = 72
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -67,6 +70,9 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+  const touchStartXRef = React.useRef<number | null>(null)
+  const touchStartYRef = React.useRef<number | null>(null)
+  const isSwipeTrackingRef = React.useRef(false)
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -107,6 +113,73 @@ function SidebarProvider({
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [toggleSidebar])
+
+  React.useEffect(() => {
+    if (!isMobile) {
+      isSwipeTrackingRef.current = false
+      touchStartXRef.current = null
+      touchStartYRef.current = null
+      return
+    }
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (openMobile || event.touches.length !== 1) {
+        isSwipeTrackingRef.current = false
+        return
+      }
+
+      const touch = event.touches[0]
+      if (touch.clientX > MOBILE_SWIPE_EDGE_WIDTH) {
+        isSwipeTrackingRef.current = false
+        return
+      }
+
+      isSwipeTrackingRef.current = true
+      touchStartXRef.current = touch.clientX
+      touchStartYRef.current = touch.clientY
+    }
+
+    const clearSwipeState = () => {
+      isSwipeTrackingRef.current = false
+      touchStartXRef.current = null
+      touchStartYRef.current = null
+    }
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (!isSwipeTrackingRef.current) {
+        return
+      }
+
+      const touch = event.changedTouches[0]
+      const startX = touchStartXRef.current
+      const startY = touchStartYRef.current
+      clearSwipeState()
+
+      if (!touch || startX === null || startY === null) {
+        return
+      }
+
+      const deltaX = touch.clientX - startX
+      const deltaY = Math.abs(touch.clientY - startY)
+      const isHorizontalSwipe =
+        deltaX >= MOBILE_SWIPE_MIN_DISTANCE &&
+        deltaY <= MOBILE_SWIPE_MAX_VERTICAL_DRIFT
+
+      if (isHorizontalSwipe) {
+        setOpenMobile(true)
+      }
+    }
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true })
+    window.addEventListener("touchend", handleTouchEnd, { passive: true })
+    window.addEventListener("touchcancel", clearSwipeState, { passive: true })
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart)
+      window.removeEventListener("touchend", handleTouchEnd)
+      window.removeEventListener("touchcancel", clearSwipeState)
+    }
+  }, [isMobile, openMobile, setOpenMobile])
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
