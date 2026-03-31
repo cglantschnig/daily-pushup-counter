@@ -88,11 +88,11 @@ export function AppSidebar({ section: _section }: AppSidebarProps) {
           to="/challenge"
           className="flex items-center gap-3 px-1 py-2 group-data-[collapsible=icon]:justify-center"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sidebar-foreground text-sidebar">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl">
             <img
               src="/favicon-32x32.png"
               alt="Daily Pushup Counter logo"
-              className="size-6 object-contain invert"
+              className="size-6 object-contain"
             />
           </div>
 
