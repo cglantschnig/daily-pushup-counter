@@ -1,19 +1,19 @@
 import { useNavigate } from "@tanstack/react-router"
 import { useMutation } from "convex/react"
-import { Flag, LoaderCircle, Volume2, X } from "lucide-react"
+import { Flag, LoaderCircle, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { api } from "../../convex/_generated/api"
+import type { ChallengePayload } from "@/lib/challenge-completion"
 import type { ChallengeSequencePhase } from "@/lib/challenge-sequence"
-import { AppShell } from "@/components/app-shell"
-import { Button } from "@/components/ui/button"
-import { getChallengeSequence } from "@/lib/challenge-sequence"
 import {
   ChallengeSaveError,
-  type ChallengePayload,
   saveChallengeCompletion,
 } from "@/lib/challenge-completion"
+import { getChallengeSequence } from "@/lib/challenge-sequence"
 import { cancelSpeech, initializeSpeech, speakText } from "@/lib/speech"
 import { getRandomTarget, getRandomWorkout } from "@/lib/workouts"
+import { AppShell } from "@/components/app-shell"
+import { Button } from "@/components/ui/button"
 
 export function ChallengeScreen() {
   const navigate = useNavigate()
@@ -165,12 +165,7 @@ export function ChallengeScreen() {
             <X className="size-4" />
             Cancel set
           </button>
-        ) : (
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-4 py-2 text-sm font-semibold text-foreground">
-            <Volume2 className="size-4 text-primary" />
-            Audio cues ready
-          </div>
-        )
+        ) : null
       }
     >
       <section className="countdown-stage flex min-h-[28rem] flex-col px-3 py-4 sm:px-6">
