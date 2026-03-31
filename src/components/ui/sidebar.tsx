@@ -349,6 +349,7 @@ function Sidebar({
               "data-open:animate-none data-closed:animate-none transition-none"
           )}
           overlayClassName={cn(
+            "transition-opacity duration-200 ease-in-out data-open:animate-none data-open:opacity-100 data-closed:animate-none data-closed:opacity-0",
             isMobileSwipePreview &&
               "data-open:animate-none data-closed:animate-none"
           )}
