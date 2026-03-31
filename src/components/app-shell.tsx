@@ -23,7 +23,7 @@ import {
 
 type AppShellProps = {
   section: AppSection
-  eyebrow?: string
+  eyebrow?: string | null
   title: string
   subtitle: string
   headerAction?: ReactNode
@@ -100,10 +100,12 @@ export function AppShell({
 
         <div className="relative flex flex-1 flex-col px-4 pt-4 pb-8 sm:px-6 lg:px-8">
           <section className="rounded-[2rem] border border-border/65 bg-card/72 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-6 dark:shadow-black/15">
-            <p className="[font-family:var(--font-display)] text-[0.72rem] tracking-[0.28em] text-primary uppercase">
-              {eyebrow}
-            </p>
-            <div className="mt-4 max-w-3xl">
+            {eyebrow ? (
+              <p className="[font-family:var(--font-display)] text-[0.72rem] tracking-[0.28em] text-primary uppercase">
+                {eyebrow}
+              </p>
+            ) : null}
+            <div className={`${eyebrow ? "mt-4" : ""} max-w-3xl`}>
               <h1 className="text-[clamp(2.2rem,4vw,3.7rem)] leading-none font-semibold tracking-[-0.08em] text-foreground">
                 {title}
               </h1>
