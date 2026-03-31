@@ -33,6 +33,7 @@ const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 const MOBILE_SWIPE_EDGE_WIDTH = 24
 const MOBILE_SWIPE_MIN_DISTANCE = 56
 const MOBILE_SWIPE_MAX_VERTICAL_DRIFT = 72
+const MOBILE_SIDEBAR_WIDTH_PX = 288
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -40,6 +41,8 @@ type SidebarContextProps = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
+  mobileSwipeOffset: number
+  setMobileSwipeOffset: (offset: number) => void
   isMobile: boolean
   toggleSidebar: () => void
 }
@@ -70,6 +73,7 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+  const [mobileSwipeOffset, setMobileSwipeOffset] = React.useState(0)
   const touchStartXRef = React.useRef<number | null>(null)
   const touchStartYRef = React.useRef<number | null>(null)
   const isSwipeTrackingRef = React.useRef(false)
@@ -119,6 +123,7 @@ function SidebarProvider({
       isSwipeTrackingRef.current = false
       touchStartXRef.current = null
       touchStartYRef.current = null
+      setMobileSwipeOffset(0)
       return
     }
 
@@ -145,6 +150,39 @@ function SidebarProvider({
       touchStartYRef.current = null
     }
 
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!isSwipeTrackingRef.current) {
+        return
+      }
+
+      const touch = event.touches[0]
+      const startX = touchStartXRef.current
+      const startY = touchStartYRef.current
+
+      if (!touch || startX === null || startY === null) {
+        return
+      }
+
+      const deltaX = touch.clientX - startX
+      const deltaY = Math.abs(touch.clientY - startY)
+
+      if (deltaY > MOBILE_SWIPE_MAX_VERTICAL_DRIFT && deltaY > deltaX) {
+        setMobileSwipeOffset(0)
+        clearSwipeState()
+        return
+      }
+
+      const nextOffset = Math.min(
+        Math.max(deltaX, 0),
+        MOBILE_SIDEBAR_WIDTH_PX
+      )
+      setMobileSwipeOffset(nextOffset)
+
+      if (nextOffset > 0) {
+        event.preventDefault()
+      }
+    }
+
     const handleTouchEnd = (event: TouchEvent) => {
       if (!isSwipeTrackingRef.current) {
         return
@@ -165,21 +203,35 @@ function SidebarProvider({
         deltaX >= MOBILE_SWIPE_MIN_DISTANCE &&
         deltaY <= MOBILE_SWIPE_MAX_VERTICAL_DRIFT
 
+      setMobileSwipeOffset(0)
       if (isHorizontalSwipe) {
         setOpenMobile(true)
       }
     }
 
     window.addEventListener("touchstart", handleTouchStart, { passive: true })
+    window.addEventListener("touchmove", handleTouchMove, { passive: false })
     window.addEventListener("touchend", handleTouchEnd, { passive: true })
-    window.addEventListener("touchcancel", clearSwipeState, { passive: true })
+    const handleTouchCancel = () => {
+      setMobileSwipeOffset(0)
+      clearSwipeState()
+    }
+
+    window.addEventListener("touchcancel", handleTouchCancel)
 
     return () => {
       window.removeEventListener("touchstart", handleTouchStart)
+      window.removeEventListener("touchmove", handleTouchMove)
       window.removeEventListener("touchend", handleTouchEnd)
-      window.removeEventListener("touchcancel", clearSwipeState)
+      window.removeEventListener("touchcancel", handleTouchCancel)
     }
   }, [isMobile, openMobile, setOpenMobile])
+
+  React.useEffect(() => {
+    if (openMobile) {
+      setMobileSwipeOffset(0)
+    }
+  }, [openMobile])
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
@@ -193,9 +245,21 @@ function SidebarProvider({
       isMobile,
       openMobile,
       setOpenMobile,
+      mobileSwipeOffset,
+      setMobileSwipeOffset,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      mobileSwipeOffset,
+      setMobileSwipeOffset,
+      toggleSidebar,
+    ]
   )
 
   return (
@@ -234,7 +298,19 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const {
+    isMobile,
+    state,
+    openMobile,
+    setOpenMobile,
+    mobileSwipeOffset,
+    setMobileSwipeOffset,
+  } = useSidebar()
+  const mobileSwipeProgress = Math.min(
+    mobileSwipeOffset / MOBILE_SIDEBAR_WIDTH_PX,
+    1
+  )
+  const isMobileSwipePreview = isMobile && !openMobile && mobileSwipeOffset > 0
 
   if (collapsible === "none") {
     return (
@@ -253,16 +329,38 @@ function Sidebar({
 
   if (isMobile) {
     return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+      <Sheet
+        modal={openMobile}
+        open={openMobile || isMobileSwipePreview}
+        onOpenChange={(nextOpen) => {
+          setMobileSwipeOffset(0)
+          setOpenMobile(nextOpen)
+        }}
+        {...props}
+      >
         <SheetContent
           dir={dir}
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className={cn(
+            "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+            isMobileSwipePreview &&
+              "data-open:animate-none data-closed:animate-none transition-none"
+          )}
+          overlayClassName={cn(
+            isMobileSwipePreview &&
+              "data-open:animate-none data-closed:animate-none"
+          )}
+          overlayStyle={
+            isMobileSwipePreview ? { opacity: mobileSwipeProgress * 0.8 } : {}
+          }
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              transform: isMobileSwipePreview
+                ? `translate3d(calc(-100% + ${mobileSwipeOffset}px), 0, 0)`
+                : undefined,
             } as React.CSSProperties
           }
           side={side}
