@@ -17,24 +17,31 @@ type SpeakOptions = {
   end?: () => void
 }
 
+type AudioTurnConsumer = {
+  enqueueChunk: (bytes: Uint8Array) => void
+  hasReceivedAudio: () => boolean
+  completeTurn: () => Promise<boolean>
+  fail: () => void
+}
+
 type PendingTurn = {
-  playback: StreamingPlayback
+  consumer: AudioTurnConsumer
   receivedAudio: boolean
   resolve: (value: boolean) => void
   reject: (error: Error) => void
 }
 
 type LiveSession = {
-  requestAudioStream: (
+  requestAudioResponse: (
     phrase: string,
-    playback: StreamingPlayback
+    consumer: AudioTurnConsumer
   ) => Promise<boolean>
   close: () => Promise<void>
 }
 
 type AudioContextConstructor = typeof AudioContext
 
-const preparedPhraseKeys = new Set<string>()
+const preparedSpeechClips = new Map<string, Uint8Array>()
 
 let audioContext: AudioContext | null = null
 let activePlayback: StreamingPlayback | null = null
@@ -172,6 +179,37 @@ class StreamingPlayback {
   }
 }
 
+class BufferedAudioClip implements AudioTurnConsumer {
+  private readonly chunks: Array<Uint8Array> = []
+  private receivedAudio = false
+
+  enqueueChunk(bytes: Uint8Array) {
+    if (bytes.byteLength < 2) {
+      return
+    }
+
+    this.receivedAudio = true
+    this.chunks.push(new Uint8Array(bytes))
+  }
+
+  hasReceivedAudio() {
+    return this.receivedAudio
+  }
+
+  completeTurn() {
+    return Promise.resolve(this.receivedAudio)
+  }
+
+  fail() {
+    this.chunks.length = 0
+    this.receivedAudio = false
+  }
+
+  toUint8Array() {
+    return concatBytes(this.chunks)
+  }
+}
+
 function getAudioContextConstructor() {
   if (typeof window === "undefined") {
     return null
@@ -230,6 +268,22 @@ function base64ToBytes(encoded: string) {
   return bytes
 }
 
+function concatBytes(chunks: Array<Uint8Array>) {
+  const totalLength = chunks.reduce(
+    (byteLength, chunk) => byteLength + chunk.byteLength,
+    0
+  )
+  const combinedBytes = new Uint8Array(totalLength)
+  let byteOffset = 0
+
+  for (const chunk of chunks) {
+    combinedBytes.set(chunk, byteOffset)
+    byteOffset += chunk.byteLength
+  }
+
+  return combinedBytes
+}
+
 function pcmToAudioBuffer(context: AudioContext, bytes: Uint8Array) {
   const sampleCount = Math.floor(bytes.byteLength / 2)
   const audioBuffer = context.createBuffer(1, sampleCount, GEMINI_AUDIO_SAMPLE_RATE)
@@ -271,14 +325,14 @@ function createPendingTurn() {
     hasActiveTurn() {
       return pendingTurn !== null
     },
-    start(playback: StreamingPlayback) {
+    start(consumer: AudioTurnConsumer) {
       if (pendingTurn) {
         throw new Error("A Gemini Live audio turn is already in progress.")
       }
 
       return new Promise<boolean>((resolve, reject) => {
         pendingTurn = {
-          playback,
+          consumer,
           receivedAudio: false,
           resolve,
           reject,
@@ -287,7 +341,7 @@ function createPendingTurn() {
     },
     reject(error: Error) {
       finishTurn((turn) => {
-        turn.playback.fail()
+        turn.consumer.fail()
         turn.reject(error)
       }, "Gemini Live audio failed.")
     },
@@ -308,7 +362,7 @@ function createPendingTurn() {
           inlineData.data
         ) {
           currentTurn.receivedAudio = true
-          currentTurn.playback.enqueueChunk(base64ToBytes(inlineData.data))
+          currentTurn.consumer.enqueueChunk(base64ToBytes(inlineData.data))
         }
       }
 
@@ -319,11 +373,11 @@ function createPendingTurn() {
 
       if (message.serverContent?.turnComplete) {
         finishTurn((turn) => {
-          if (!turn.receivedAudio && !turn.playback.hasReceivedAudio()) {
+          if (!turn.receivedAudio && !turn.consumer.hasReceivedAudio()) {
             throw new Error("Gemini Live returned no audio for this phrase.")
           }
 
-          void turn.playback.completeTurn().then(turn.resolve)
+          void turn.consumer.completeTurn().then(turn.resolve)
         }, "Gemini Live returned no audio.")
       }
     },
@@ -379,8 +433,8 @@ async function connectSession(onClose: () => void): Promise<LiveSession> {
   })
 
   return {
-    async requestAudioStream(phrase: string, playback: StreamingPlayback) {
-      const responsePromise = pendingTurn.start(playback)
+    async requestAudioResponse(phrase: string, consumer: AudioTurnConsumer) {
+      const responsePromise = pendingTurn.start(consumer)
       const normalizedPhrase = normalizeSpeechText(phrase)
 
       session.sendClientContent({
@@ -479,7 +533,7 @@ export function isGeminiAudioPlaybackSupported() {
 }
 
 export function getGeminiCachedClipCount() {
-  return preparedPhraseKeys.size
+  return preparedSpeechClips.size
 }
 
 export async function primeGeminiSpeechClips(
@@ -502,22 +556,39 @@ export async function primeGeminiSpeechClips(
   }
 
   const uncachedTexts = Array.from(
-    new Set(texts.map(normalizeSpeechText).filter(Boolean))
+    new Set(
+      texts
+        .map(normalizeSpeechText)
+        .filter((text) => Boolean(text) && !preparedSpeechClips.has(getSpeechKey(text)))
+    )
   )
 
-  if (uncachedTexts.length === 0 && liveSessionPromise) {
+  if (uncachedTexts.length === 0) {
     return {
-      success: true,
+      success: getGeminiCachedClipCount() > 0,
       primedClipCount: getGeminiCachedClipCount(),
       error: null,
     }
   }
 
   try {
-    await getLiveSession()
+    const session = await getLiveSession()
 
     for (const text of uncachedTexts) {
-      preparedPhraseKeys.add(getSpeechKey(text))
+      const clip = new BufferedAudioClip()
+      const wasGenerated = await session.requestAudioResponse(text, clip)
+
+      if (!wasGenerated) {
+        throw new Error("Gemini Live returned no audio for this phrase.")
+      }
+
+      const audioBytes = clip.toUint8Array()
+
+      if (audioBytes.byteLength === 0) {
+        throw new Error("Gemini Live returned an empty audio clip.")
+      }
+
+      preparedSpeechClips.set(getSpeechKey(text), audioBytes)
     }
 
     return {
@@ -531,6 +602,8 @@ export async function primeGeminiSpeechClips(
       primedClipCount: getGeminiCachedClipCount(),
       error: getGeminiErrorMessage(error),
     }
+  } finally {
+    await closeLiveSession()
   }
 }
 
@@ -541,6 +614,12 @@ export async function playGeminiSpeechClip(
   const normalizedText = normalizeSpeechText(text)
 
   if (!normalizedText) {
+    return false
+  }
+
+  const cachedClip = preparedSpeechClips.get(getSpeechKey(normalizedText))
+
+  if (!cachedClip) {
     return false
   }
 
@@ -560,12 +639,8 @@ export async function playGeminiSpeechClip(
   activePlayback = playback
 
   try {
-    const session = await getLiveSession()
-    const success = await session.requestAudioStream(normalizedText, playback)
-    return success
-  } catch {
-    playback.fail()
-    return false
+    playback.enqueueChunk(cachedClip)
+    return await playback.completeTurn()
   } finally {
     if (activePlayback === playback) {
       activePlayback = null
@@ -583,7 +658,7 @@ export function cancelGeminiSpeechPlayback() {
 }
 
 export function __resetGeminiLiveAudioForTests() {
-  preparedPhraseKeys.clear()
+  preparedSpeechClips.clear()
   cancelGeminiSpeechPlayback()
   audioContext = null
   liveSessionPromise = null

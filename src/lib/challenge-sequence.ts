@@ -9,7 +9,7 @@ export type ChallengeSequenceStep = {
   delayMs: number | null
 }
 
-const COUNTDOWN_STEP_DELAY_MS = 1500
+const COUNTDOWN_STEP_DELAY_MS = 1000
 
 const COUNTDOWN_STEPS = [
   { label: "3", speech: "Three" },

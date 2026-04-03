@@ -166,8 +166,8 @@ describe("gemini live audio", () => {
     })
   })
 
-  it("warms a live session and tracks prepared phrases across primes", async () => {
-    installLiveSessionMock({})
+  it("primes and caches generated clips across repeated primes", async () => {
+    const requestedPhrases = installLiveSessionMock({})
 
     await expect(primeGeminiSpeechClips(["One", "Two"])).resolves.toMatchObject({
       success: true,
@@ -178,24 +178,38 @@ describe("gemini live audio", () => {
       primedClipCount: 3,
     })
 
-    expect(connectMock).toHaveBeenCalledTimes(1)
+    expect(requestedPhrases).toEqual(["One", "Two", "Three"])
+    expect(connectMock).toHaveBeenCalledTimes(2)
     expect(getGeminiCachedClipCount()).toBe(3)
     expect(FakeAudioContext.instances).toBe(0)
     expect(FakeAudioContext.resumes).toBe(0)
   })
 
-  it("streams Gemini audio for a phrase as it arrives", async () => {
+  it("plays a primed clip without requesting Gemini again", async () => {
     const requestedPhrases = installLiveSessionMock({
       Go: { samples: [0, 8192, 16384, 0] },
     })
     const start = vi.fn()
     const end = vi.fn()
 
+    await expect(primeGeminiSpeechClips(["Go"])).resolves.toMatchObject({
+      success: true,
+      primedClipCount: 1,
+    })
     await expect(playGeminiSpeechClip("Go", { start, end })).resolves.toBe(true)
 
     expect(requestedPhrases).toEqual(["Go"])
     expect(start).toHaveBeenCalledTimes(1)
     expect(end).toHaveBeenCalledTimes(1)
+  })
+
+  it("returns false when attempting to play an unprimed clip", async () => {
+    installLiveSessionMock({
+      One: { samples: [0, 32767] },
+    })
+
+    await expect(playGeminiSpeechClip("One")).resolves.toBe(false)
+    expect(connectMock).not.toHaveBeenCalled()
   })
 
   it("returns false when the live session closes before audio is produced", async () => {
@@ -206,8 +220,8 @@ describe("gemini live audio", () => {
     await expect(playGeminiSpeechClip("One")).resolves.toBe(false)
   })
 
-  it("cancels active playback and tears down the session", async () => {
-    installLiveSessionMock({
+  it("keeps primed clips available after playback is canceled", async () => {
+    const requestedPhrases = installLiveSessionMock({
       One: { samples: [0, 32767] },
     })
 
@@ -218,6 +232,7 @@ describe("gemini live audio", () => {
       success: true,
       primedClipCount: 1,
     })
-    expect(connectMock).toHaveBeenCalledTimes(2)
+    expect(requestedPhrases).toEqual(["One"])
+    expect(connectMock).toHaveBeenCalledTimes(1)
   })
 })
