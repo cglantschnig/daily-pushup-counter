@@ -1,13 +1,10 @@
-import {
-  GoogleGenAI,
-  Modality,
-  createUserContent,
-  type LiveServerMessage,
-} from "@google/genai"
+import { GoogleGenAI, Modality, createUserContent } from "@google/genai"
+import type { LiveServerMessage } from "@google/genai"
 import { getGeminiLiveToken } from "@/lib/gemini-live-token"
 
 const GEMINI_AUDIO_MIME_PREFIX = "audio/pcm"
 const GEMINI_AUDIO_SAMPLE_RATE = 24000
+const AUDIO_START_LEAD_TIME_SECONDS = 0.02
 
 type PrimeGeminiSpeechResult = {
   success: boolean
@@ -21,29 +18,174 @@ type SpeakOptions = {
 }
 
 type PendingTurn = {
-  chunks: Array<Uint8Array>
-  resolve: (value: Uint8Array) => void
+  playback: StreamingPlayback
+  receivedAudio: boolean
+  resolve: (value: boolean) => void
   reject: (error: Error) => void
+}
+
+type LiveSession = {
+  requestAudioStream: (
+    phrase: string,
+    playback: StreamingPlayback
+  ) => Promise<boolean>
+  close: () => Promise<void>
 }
 
 type AudioContextConstructor = typeof AudioContext
 
-const clipCache = new Map<string, AudioBuffer>()
+const preparedPhraseKeys = new Set<string>()
 
 let audioContext: AudioContext | null = null
-let activeSourceNode: AudioBufferSourceNode | null = null
+let activePlayback: StreamingPlayback | null = null
+let liveSessionPromise: Promise<LiveSession> | null = null
+
+class StreamingPlayback {
+  private readonly sourceNodes = new Set<AudioBufferSourceNode>()
+  private nextStartTime: number
+  private pendingSourceCount = 0
+  private receivedAudio = false
+  private startNotified = false
+  private settled = false
+  private turnComplete = false
+  private readonly completionPromise: Promise<boolean>
+  private resolveCompletion: (value: boolean) => void = () => undefined
+
+  constructor(
+    private readonly context: AudioContext,
+    private readonly options: SpeakOptions
+  ) {
+    this.nextStartTime = context.currentTime
+    this.completionPromise = new Promise((resolve) => {
+      this.resolveCompletion = resolve
+    })
+  }
+
+  get done() {
+    return this.completionPromise
+  }
+
+  hasReceivedAudio() {
+    return this.receivedAudio
+  }
+
+  enqueueChunk(bytes: Uint8Array) {
+    if (this.settled || bytes.byteLength < 2) {
+      return
+    }
+
+    const audioBuffer = pcmToAudioBuffer(this.context, bytes)
+
+    if (audioBuffer.length === 0) {
+      return
+    }
+
+    const sourceNode = this.context.createBufferSource()
+    const scheduledStartTime = Math.max(
+      this.context.currentTime + AUDIO_START_LEAD_TIME_SECONDS,
+      this.nextStartTime
+    )
+
+    this.receivedAudio = true
+    this.pendingSourceCount += 1
+    this.nextStartTime = scheduledStartTime + audioBuffer.duration
+    this.sourceNodes.add(sourceNode)
+
+    sourceNode.buffer = audioBuffer
+    sourceNode.connect(this.context.destination)
+    sourceNode.onended = () => {
+      sourceNode.disconnect()
+      this.sourceNodes.delete(sourceNode)
+      this.pendingSourceCount -= 1
+
+      if (this.turnComplete && this.pendingSourceCount === 0) {
+        this.finish(true)
+      }
+    }
+
+    if (!this.startNotified) {
+      this.startNotified = true
+      this.options.start?.()
+    }
+
+    sourceNode.start(scheduledStartTime)
+  }
+
+  async completeTurn() {
+    if (this.settled) {
+      return this.completionPromise
+    }
+
+    this.turnComplete = true
+
+    if (!this.receivedAudio) {
+      this.finish(false)
+      return this.completionPromise
+    }
+
+    if (this.pendingSourceCount === 0) {
+      this.finish(true)
+    }
+
+    return this.completionPromise
+  }
+
+  cancel() {
+    this.stopSources()
+    this.finish(false)
+  }
+
+  fail() {
+    this.stopSources()
+    this.finish(false)
+  }
+
+  private stopSources() {
+    for (const sourceNode of Array.from(this.sourceNodes)) {
+      sourceNode.onended = null
+
+      try {
+        sourceNode.stop()
+      } catch {
+        // Ignore double-stop errors from partially finished source nodes.
+      }
+
+      sourceNode.disconnect()
+      this.sourceNodes.delete(sourceNode)
+    }
+
+    this.pendingSourceCount = 0
+  }
+
+  private finish(success: boolean) {
+    if (this.settled) {
+      return
+    }
+
+    this.settled = true
+
+    if (success) {
+      this.options.end?.()
+    }
+
+    this.resolveCompletion(success)
+  }
+}
 
 function getAudioContextConstructor() {
   if (typeof window === "undefined") {
     return null
   }
 
-  return (
-    window.AudioContext ??
-    (window as typeof window & { webkitAudioContext?: AudioContextConstructor })
-      .webkitAudioContext ??
-    null
-  )
+  const browserWindow = window as typeof window & {
+    webkitAudioContext?: AudioContextConstructor
+  }
+
+  if ("AudioContext" in browserWindow) {
+    return browserWindow.AudioContext
+  }
+
+  return browserWindow.webkitAudioContext ?? null
 }
 
 function getAudioContext() {
@@ -85,19 +227,6 @@ function base64ToBytes(encoded: string) {
   return bytes
 }
 
-function concatChunks(chunks: Array<Uint8Array>) {
-  const totalSize = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
-  const combined = new Uint8Array(totalSize)
-  let offset = 0
-
-  for (const chunk of chunks) {
-    combined.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-
-  return combined
-}
-
 function pcmToAudioBuffer(context: AudioContext, bytes: Uint8Array) {
   const sampleCount = Math.floor(bytes.byteLength / 2)
   const audioBuffer = context.createBuffer(1, sampleCount, GEMINI_AUDIO_SAMPLE_RATE)
@@ -115,7 +244,7 @@ function createPendingTurn() {
   let pendingTurn: PendingTurn | null = null
 
   function finishTurn(
-    resolver: (pending: PendingTurn) => void,
+    handler: (turn: PendingTurn) => void,
     fallbackError: string
   ) {
     const currentTurn = pendingTurn
@@ -127,7 +256,7 @@ function createPendingTurn() {
     pendingTurn = null
 
     try {
-      resolver(currentTurn)
+      handler(currentTurn)
     } catch (error) {
       currentTurn.reject(
         error instanceof Error ? error : new Error(fallbackError)
@@ -136,17 +265,18 @@ function createPendingTurn() {
   }
 
   return {
-    get current() {
-      return pendingTurn
+    hasActiveTurn() {
+      return pendingTurn !== null
     },
-    start() {
+    start(playback: StreamingPlayback) {
       if (pendingTurn) {
         throw new Error("A Gemini Live audio turn is already in progress.")
       }
 
-      return new Promise<Uint8Array>((resolve, reject) => {
+      return new Promise<boolean>((resolve, reject) => {
         pendingTurn = {
-          chunks: [],
+          playback,
+          receivedAudio: false,
           resolve,
           reject,
         }
@@ -154,6 +284,7 @@ function createPendingTurn() {
     },
     reject(error: Error) {
       finishTurn((turn) => {
+        turn.playback.fail()
         turn.reject(error)
       }, "Gemini Live audio failed.")
     },
@@ -173,7 +304,8 @@ function createPendingTurn() {
           inlineData?.mimeType?.startsWith(GEMINI_AUDIO_MIME_PREFIX) &&
           inlineData.data
         ) {
-          currentTurn.chunks.push(base64ToBytes(inlineData.data))
+          currentTurn.receivedAudio = true
+          currentTurn.playback.enqueueChunk(base64ToBytes(inlineData.data))
         }
       }
 
@@ -184,18 +316,18 @@ function createPendingTurn() {
 
       if (message.serverContent?.turnComplete) {
         finishTurn((turn) => {
-          if (turn.chunks.length === 0) {
+          if (!turn.receivedAudio && !turn.playback.hasReceivedAudio()) {
             throw new Error("Gemini Live returned no audio for this phrase.")
           }
 
-          turn.resolve(concatChunks(turn.chunks))
+          void turn.playback.completeTurn().then(turn.resolve)
         }, "Gemini Live returned no audio.")
       }
     },
   }
 }
 
-async function connectSession() {
+async function connectSession(onClose: () => void): Promise<LiveSession> {
   const { token, model } = await getGeminiLiveToken()
 
   if (!token) {
@@ -208,7 +340,8 @@ async function connectSession() {
     apiVersion: "v1alpha",
   })
 
-  let closeReject: ((error: Error) => void) | null = null
+  let closeResolve: (() => void) | null = null
+  let closed = false
   const session = await ai.live.connect({
     model,
     config: {
@@ -219,61 +352,123 @@ async function connectSession() {
         pendingTurn.handleMessage(message)
       },
       onerror: (error) => {
-        pendingTurn.reject(new Error(error.message || "Gemini Live connection failed."))
+        onClose()
+        pendingTurn.reject(
+          new Error(error.message || "Gemini Live connection failed.")
+        )
       },
       onclose: (event) => {
+        closed = true
+        onClose()
+
         const error =
           event.code === 1000
             ? new Error("Gemini Live session closed.")
             : new Error(event.reason || "Gemini Live session closed unexpectedly.")
 
-        pendingTurn.reject(error)
-        closeReject?.(error)
+        if (pendingTurn.hasActiveTurn()) {
+          pendingTurn.reject(error)
+        }
+
+        closeResolve?.()
       },
     },
   })
 
-  async function requestAudio(phrase: string) {
-    const responsePromise = pendingTurn.start()
-    const normalizedPhrase = normalizeSpeechText(phrase)
+  return {
+    async requestAudioStream(phrase: string, playback: StreamingPlayback) {
+      const responsePromise = pendingTurn.start(playback)
+      const normalizedPhrase = normalizeSpeechText(phrase)
 
-    session.sendClientContent({
-      turns: createUserContent(normalizedPhrase),
-      turnComplete: true,
-    })
+      session.sendClientContent({
+        turns: createUserContent(normalizedPhrase),
+        turnComplete: true,
+      })
 
-    return responsePromise
-  }
-
-  async function close() {
-    await new Promise<void>((resolve) => {
-      let settled = false
-
-      closeReject = () => {
-        if (settled) {
-          return
-        }
-
-        settled = true
-        resolve()
+      return responsePromise
+    },
+    async close() {
+      if (closed) {
+        return
       }
 
-      session.close()
-      window.setTimeout(() => {
-        if (settled) {
-          return
+      await new Promise<void>((resolve) => {
+        let settled = false
+
+        closeResolve = () => {
+          if (settled) {
+            return
+          }
+
+          settled = true
+          resolve()
         }
 
-        settled = true
-        resolve()
-      }, 50)
+        session.close()
+        window.setTimeout(() => {
+          if (settled) {
+            return
+          }
+
+          settled = true
+          resolve()
+        }, 50)
+      })
+    },
+  }
+}
+
+async function getLiveSession() {
+  if (!liveSessionPromise) {
+    let nextSessionPromise: Promise<LiveSession> | null = null
+
+    nextSessionPromise = connectSession(() => {
+      if (liveSessionPromise === nextSessionPromise) {
+        liveSessionPromise = null
+      }
+    }).catch((error) => {
+      if (liveSessionPromise === nextSessionPromise) {
+        liveSessionPromise = null
+      }
+
+      throw error
     })
+
+    liveSessionPromise = nextSessionPromise
   }
 
-  return {
-    requestAudio,
-    close,
+  return liveSessionPromise
+}
+
+async function closeLiveSession() {
+  const sessionPromise = liveSessionPromise
+
+  liveSessionPromise = null
+
+  if (!sessionPromise) {
+    return
   }
+
+  try {
+    const session = await sessionPromise
+    await session.close()
+  } catch {
+    // The session is already closed or failed to connect.
+  }
+}
+
+async function ensurePlaybackContext() {
+  const context = getAudioContext()
+
+  if (!context) {
+    return null
+  }
+
+  if (context.state === "suspended") {
+    await context.resume()
+  }
+
+  return context
 }
 
 export function isGeminiAudioPlaybackSupported() {
@@ -281,7 +476,7 @@ export function isGeminiAudioPlaybackSupported() {
 }
 
 export function getGeminiCachedClipCount() {
-  return clipCache.size
+  return preparedPhraseKeys.size
 }
 
 export async function primeGeminiSpeechClips(
@@ -295,7 +490,7 @@ export async function primeGeminiSpeechClips(
     }
   }
 
-  const context = getAudioContext()
+  const context = await ensurePlaybackContext()
 
   if (!context) {
     return {
@@ -306,15 +501,10 @@ export async function primeGeminiSpeechClips(
   }
 
   const uncachedTexts = Array.from(
-    new Set(
-      texts
-        .map(normalizeSpeechText)
-        .filter(Boolean)
-        .filter((text) => !clipCache.has(getSpeechKey(text)))
-    )
+    new Set(texts.map(normalizeSpeechText).filter(Boolean))
   )
 
-  if (uncachedTexts.length === 0) {
+  if (uncachedTexts.length === 0 && liveSessionPromise) {
     return {
       success: true,
       primedClipCount: getGeminiCachedClipCount(),
@@ -322,19 +512,11 @@ export async function primeGeminiSpeechClips(
     }
   }
 
-  let session:
-    | {
-        requestAudio: (phrase: string) => Promise<Uint8Array>
-        close: () => Promise<void>
-      }
-    | null = null
-
   try {
-    session = await connectSession()
+    await getLiveSession()
 
     for (const text of uncachedTexts) {
-      const pcmBytes = await session.requestAudio(text)
-      clipCache.set(getSpeechKey(text), pcmToAudioBuffer(context, pcmBytes))
+      preparedPhraseKeys.add(getSpeechKey(text))
     }
 
     return {
@@ -348,8 +530,6 @@ export async function primeGeminiSpeechClips(
       primedClipCount: getGeminiCachedClipCount(),
       error: getGeminiErrorMessage(error),
     }
-  } finally {
-    await session?.close().catch(() => undefined)
   }
 }
 
@@ -357,56 +537,53 @@ export async function playGeminiSpeechClip(
   text: string,
   options: SpeakOptions = {}
 ) {
-  const context = getAudioContext()
+  const normalizedText = normalizeSpeechText(text)
+
+  if (!normalizedText) {
+    return false
+  }
+
+  const context = await ensurePlaybackContext()
 
   if (!context) {
     return false
   }
 
-  const clip = clipCache.get(getSpeechKey(text))
+  if (activePlayback) {
+    activePlayback.cancel()
+    activePlayback = null
+    await closeLiveSession()
+  }
 
-  if (!clip) {
+  const playback = new StreamingPlayback(context, options)
+  activePlayback = playback
+
+  try {
+    const session = await getLiveSession()
+    const success = await session.requestAudioStream(normalizedText, playback)
+    return success
+  } catch {
+    playback.fail()
     return false
-  }
-
-  if (context.state === "suspended") {
-    await context.resume()
-  }
-
-  cancelGeminiSpeechPlayback()
-
-  return new Promise<boolean>((resolve) => {
-    const sourceNode = context.createBufferSource()
-
-    activeSourceNode = sourceNode
-    sourceNode.buffer = clip
-    sourceNode.connect(context.destination)
-    sourceNode.onended = () => {
-      if (activeSourceNode === sourceNode) {
-        activeSourceNode = null
-      }
-
-      options.end?.()
-      resolve(true)
+  } finally {
+    if (activePlayback === playback) {
+      activePlayback = null
     }
-
-    options.start?.()
-    sourceNode.start(0)
-  })
+  }
 }
 
 export function cancelGeminiSpeechPlayback() {
-  if (!activeSourceNode) {
-    return
+  if (activePlayback) {
+    activePlayback.cancel()
+    activePlayback = null
   }
 
-  activeSourceNode.stop()
-  activeSourceNode.disconnect()
-  activeSourceNode = null
+  void closeLiveSession()
 }
 
 export function __resetGeminiLiveAudioForTests() {
-  clipCache.clear()
+  preparedPhraseKeys.clear()
   cancelGeminiSpeechPlayback()
   audioContext = null
+  liveSessionPromise = null
 }

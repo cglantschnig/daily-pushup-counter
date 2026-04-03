@@ -74,7 +74,7 @@ pnpm format     # format TS/TSX/JS/JSX files
 
 - Challenge history is stored in Convex per signed-in Clerk user.
 - User preferences are still stored in the browser.
-- Challenge audio is prefetched from Gemini Live whenever `GEMINI_API_KEY` is configured and reachable.
+- Challenge audio warms a Gemini Live session up front and streams generated speech during playback whenever `GEMINI_API_KEY` is configured and reachable.
 - Browser speech synthesis remains available as the fallback if Gemini Live audio cannot be initialized.
 - The workout catalog is currently limited to pushups, but the route and workout helpers are already structured for expansion.
 

@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  __resetGeminiLiveAudioForTests,
+  cancelGeminiSpeechPlayback,
+  getGeminiCachedClipCount,
+  playGeminiSpeechClip,
+  primeGeminiSpeechClips,
+} from "@/lib/gemini-live-audio"
 
 const connectMock = vi.hoisted(() => vi.fn())
 const getGeminiLiveTokenMock = vi.hoisted(() => vi.fn())
@@ -24,17 +31,17 @@ vi.mock("@google/genai", () => ({
   }),
 }))
 
-import {
-  __resetGeminiLiveAudioForTests,
-  getGeminiCachedClipCount,
-  primeGeminiSpeechClips,
-} from "@/lib/gemini-live-audio"
-
 class FakeAudioBuffer {
+  readonly duration: number
   private readonly channelData: Float32Array
 
   constructor(length: number) {
     this.channelData = new Float32Array(length)
+    this.duration = length / 24000
+  }
+
+  get length() {
+    return this.channelData.length
   }
 
   getChannelData() {
@@ -56,6 +63,7 @@ class FakeAudioBufferSourceNode {
 }
 
 class FakeAudioContext {
+  currentTime = 0
   state: AudioContextState = "running"
   destination = {}
   resume = vi.fn().mockResolvedValue(undefined)
@@ -79,10 +87,12 @@ function encodePcm(samples: Array<number>) {
   return window.btoa(binary)
 }
 
-function installLiveSessionMock(actions: Record<string, { error?: string }>) {
+function installLiveSessionMock(
+  actions: Record<string, { error?: string; samples?: Array<number> } | undefined>
+) {
   const requestedPhrases: Array<string> = []
 
-  connectMock.mockImplementation(async ({ callbacks }) => {
+  connectMock.mockImplementation(({ callbacks }) => {
     return {
       sendClientContent: ({
         turns,
@@ -105,7 +115,7 @@ function installLiveSessionMock(actions: Record<string, { error?: string }>) {
                 {
                   inlineData: {
                     mimeType: "audio/pcm;rate=24000",
-                    data: encodePcm([0, 32767]),
+                    data: encodePcm(action?.samples ?? [0, 32767]),
                   },
                 },
               ],
@@ -143,12 +153,8 @@ describe("gemini live audio", () => {
     })
   })
 
-  it("only requests uncached phrases on repeated primes", async () => {
-    const requestedPhrases = installLiveSessionMock({
-      One: {},
-      Two: {},
-      Three: {},
-    })
+  it("warms a live session and tracks prepared phrases across primes", async () => {
+    installLiveSessionMock({})
 
     await expect(primeGeminiSpeechClips(["One", "Two"])).resolves.toMatchObject({
       success: true,
@@ -159,22 +165,44 @@ describe("gemini live audio", () => {
       primedClipCount: 3,
     })
 
-    expect(requestedPhrases).toEqual(["One", "Two", "Three"])
+    expect(connectMock).toHaveBeenCalledTimes(1)
     expect(getGeminiCachedClipCount()).toBe(3)
   })
 
-  it("keeps successful clips cached when a later phrase fails", async () => {
+  it("streams Gemini audio for a phrase as it arrives", async () => {
+    const requestedPhrases = installLiveSessionMock({
+      Go: { samples: [0, 8192, 16384, 0] },
+    })
+    const start = vi.fn()
+    const end = vi.fn()
+
+    await expect(playGeminiSpeechClip("Go", { start, end })).resolves.toBe(true)
+
+    expect(requestedPhrases).toEqual(["Go"])
+    expect(start).toHaveBeenCalledTimes(1)
+    expect(end).toHaveBeenCalledTimes(1)
+  })
+
+  it("returns false when the live session closes before audio is produced", async () => {
     installLiveSessionMock({
-      One: {},
-      Two: { error: "session failed" },
+      One: { error: "session failed" },
     })
 
-    await expect(primeGeminiSpeechClips(["One", "Two"])).resolves.toMatchObject({
-      success: false,
+    await expect(playGeminiSpeechClip("One")).resolves.toBe(false)
+  })
+
+  it("cancels active playback and tears down the session", async () => {
+    installLiveSessionMock({
+      One: { samples: [0, 32767] },
+    })
+
+    await primeGeminiSpeechClips(["One"])
+    cancelGeminiSpeechPlayback()
+
+    await expect(primeGeminiSpeechClips(["One"])).resolves.toMatchObject({
+      success: true,
       primedClipCount: 1,
-      error: "session failed",
     })
-
-    expect(getGeminiCachedClipCount()).toBe(1)
+    expect(connectMock).toHaveBeenCalledTimes(2)
   })
 })

@@ -216,9 +216,9 @@ export function ChallengeScreen() {
         : "Ready to start"
   const audioStatusLabel =
     isPreparingAudio || audioState === "warming"
-      ? "Preparing AI audio..."
+      ? "Preparing AI live audio..."
       : audioState === "ready-gemini"
-        ? "AI audio ready"
+        ? "AI live audio ready"
         : audioState === "ready-browser-fallback"
           ? "Using device speech fallback"
           : "Audio unavailable"
