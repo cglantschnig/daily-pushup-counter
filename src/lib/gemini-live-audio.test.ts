@@ -63,10 +63,21 @@ class FakeAudioBufferSourceNode {
 }
 
 class FakeAudioContext {
+  static instances = 0
+  static resumes = 0
+
   currentTime = 0
   state: AudioContextState = "running"
   destination = {}
-  resume = vi.fn().mockResolvedValue(undefined)
+  resume = vi.fn().mockImplementation(() => {
+    FakeAudioContext.resumes += 1
+    return Promise.resolve()
+  })
+
+  constructor() {
+    FakeAudioContext.instances += 1
+  }
+
   createBuffer(_channels: number, length: number) {
     return new FakeAudioBuffer(length) as unknown as AudioBuffer
   }
@@ -141,6 +152,8 @@ describe("gemini live audio", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     __resetGeminiLiveAudioForTests()
+    FakeAudioContext.instances = 0
+    FakeAudioContext.resumes = 0
     getGeminiLiveTokenMock.mockResolvedValue({
       token: "ephemeral-token",
       model: "gemini-model",
@@ -167,6 +180,8 @@ describe("gemini live audio", () => {
 
     expect(connectMock).toHaveBeenCalledTimes(1)
     expect(getGeminiCachedClipCount()).toBe(3)
+    expect(FakeAudioContext.instances).toBe(0)
+    expect(FakeAudioContext.resumes).toBe(0)
   })
 
   it("streams Gemini audio for a phrase as it arrives", async () => {

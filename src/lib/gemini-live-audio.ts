@@ -177,15 +177,18 @@ function getAudioContextConstructor() {
     return null
   }
 
-  const browserWindow = window as typeof window & {
-    webkitAudioContext?: AudioContextConstructor
-  }
+  const browserWindow = window
+  const webkitAudioContext = (
+    browserWindow as Window & {
+      webkitAudioContext?: AudioContextConstructor
+    }
+  ).webkitAudioContext
 
-  if ("AudioContext" in browserWindow) {
+  if (typeof browserWindow.AudioContext === "function") {
     return browserWindow.AudioContext
   }
 
-  return browserWindow.webkitAudioContext ?? null
+  return webkitAudioContext ?? null
 }
 
 function getAudioContext() {
@@ -490,9 +493,7 @@ export async function primeGeminiSpeechClips(
     }
   }
 
-  const context = await ensurePlaybackContext()
-
-  if (!context) {
+  if (!isGeminiAudioPlaybackSupported()) {
     return {
       success: false,
       primedClipCount: getGeminiCachedClipCount(),
