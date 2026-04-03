@@ -125,21 +125,42 @@ export function ChallengeScreen() {
     }
 
     const step = challengeSequence[stepIndex]
+    let hasBegunStep = false
 
-    setCurrentStep(step.label)
-    setSequencePhase(step.phase)
-    if (step.speech) {
-      void speakText(step.speech)
+    const beginStep = () => {
+      if (hasBegunStep || sequenceSessionRef.current !== sessionId) {
+        return
+      }
+
+      hasBegunStep = true
+      setCurrentStep(step.label)
+      setSequencePhase(step.phase)
+
+      if (step.phase === "complete") {
+        sequenceTimeoutRef.current = null
+        return
+      }
+
+      sequenceTimeoutRef.current = window.setTimeout(() => {
+        runSequenceStep(stepIndex + 1, sessionId)
+      }, step.delayMs ?? 0)
     }
 
-    if (step.phase === "complete") {
-      sequenceTimeoutRef.current = null
+    if (!step.speech) {
+      beginStep()
       return
     }
 
-    sequenceTimeoutRef.current = window.setTimeout(() => {
-      runSequenceStep(stepIndex + 1, sessionId)
-    }, step.delayMs ?? 0)
+    void speakText(step.speech, {
+      start: beginStep,
+      error: () => {
+        beginStep()
+      },
+    }).then((didSpeak) => {
+      if (!didSpeak) {
+        beginStep()
+      }
+    })
   }
 
   async function handleStart() {
